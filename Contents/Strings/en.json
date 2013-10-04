@@ -1,5 +1,5 @@
 {
-	"MainMenuTitle": "Hockey Streams",
+	"MainMenuTitle": "Hockey",
 	"ErrorNoGames": "No games could be found.",
 	"ErrorNoStreams": "No streams could be found for this game.",
 	"ErrorStreamsNotReady": "Streams can't be accessed more than {minutes} minutes before game time.",

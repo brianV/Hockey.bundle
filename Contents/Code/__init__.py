@@ -4,9 +4,9 @@ from dateutil import tz
 
 ###############################################
 
-VIDEO_PREFIX = "/video/hockeystreams"
+VIDEO_PREFIX = "/video/hockey"
 
-NAME = "Hockey Streams"
+NAME = "Hockey"
 
 ART = 'art-default.png'
 ICON = 'icon-default.png'
