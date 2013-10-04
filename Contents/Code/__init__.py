@@ -4,12 +4,13 @@ from dateutil import tz
 
 ###############################################
 
-VIDEO_PREFIX = "/video/nhl"
+VIDEO_PREFIX = "/video/hockeystreams"
 
-NAME = "NHL"
+NAME = "Hockey Streams"
 
 ART = 'art-default.png'
 ICON = 'icon-default.png'
+DEFAULT_TEAM_ICON = R("Team_DEFAULT.jpg")
 
 SPORT_KEYWORD = "hockey"
 STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8?team={city}&desc={desc}"
@@ -20,7 +21,7 @@ TEAMS = {
 	"BOS": { "City": "Boston", "Name": "Bruins", "Logo": R("Team_BOS.jpg") },
 	"BUF": { "City": "Buffalo", "Name": "Sabres", "Logo": R("Team_BUF.jpg") },
 	"CAR": { "City": "Carolina", "Name": "Hurricanes", "Logo": R("Team_CAR.jpg") },
-	"CBS": { "City": "Columbus", "Name": "Blue Jackets", "Logo": R("Team_CBS.jpg") },
+	"CMB": { "City": "Columbus", "Name": "Blue Jackets", "Logo": R("Team_CBS.jpg") },
 	"CGY": { "City": "Calgary", "Name": "Flames", "Logo": R("Team_CGY.jpg") },
 	"CHI": { "City": "Chicago", "Name": "Blackhawks", "Logo": R("Team_CHI.jpg") },
 	"COL": { "City": "Colorado", "Name": "Avalanche", "Logo": R("Team_COL.jpg") },
@@ -48,39 +49,6 @@ TEAMS = {
 	"WSH": { "City": "Washington", "Name": "Capitals", "Logo": R("Team_WSH.jpg") }
 }
 
-LOGOS = {
-	"ANA": R("Team_ANA.jpg"),
-	"BOS": R("Team_BOS.jpg"),
-	"BUF": R("Team_BUF.jpg"),
-	"CAR": R("Team_CAR.jpg"),
-	"CBS": R("Team_CBS.jpg"),
-	"CGY": R("Team_CGY.jpg"),
-	"CHI": R("Team_CHI.jpg"),
-	"COL": R("Team_COL.jpg"),
-	"DAL": R("Team_DAL.jpg"),
-	"DET": R("Team_DET.jpg"),
-	"EDM": R("Team_EDM.jpg"),
-	"FLA": R("Team_FLA.jpg"),
-	"LOS": R("Team_LOS.jpg"),
-	"MIN": R("Team_MIN.jpg"),
-	"MON": R("Team_MON.jpg"),
-	"NJD": R("Team_NJD.jpg"),
-	"NSH": R("Team_NSH.jpg"),
-	"NYI": R("Team_NYI.jpg"),
-	"NYR": R("Team_NYR.jpg"),
-	"OTT": R("Team_OTT.jpg"),
-	"PHI": R("Team_PHI.jpg"),
-	"PHX": R("Team_PHX.jpg"),
-	"PIT": R("Team_PIT.jpg"),
-	"SAN": R("Team_SAN.jpg"),
-	"STL": R("Team_STL.jpg"),
-	"TAM": R("Team_TAM.jpg"),
-	"TOR": R("Team_TOR.jpg"),
-	"VAN": R("Team_VAN.jpg"),
-	"WPG": R("Team_WPG.jpg"),
-	"WSH": R("Team_WSH.jpg")
-}
-
 ###############################################
 
 # This function is initially called by PMS to inialize the plugin
@@ -93,12 +61,12 @@ def Start():
 	
 	ObjectContainer.title1 = NAME
 	
-	core.Init(NAME, SPORT_KEYWORD, STREAM_FORMAT, TEAMS)
+	core.Init(NAME, SPORT_KEYWORD, STREAM_FORMAT, TEAMS, DEFAULT_TEAM_ICON)
 	
 	Log.Debug("Plugin Start")
 
 def MainMenu():
-	dir = ObjectContainer(title2 = Locale.LocalString("MainMenuTitle"), art=R("art-default.png"))
+	dir = ObjectContainer(title2 = Locale.LocalString("MainMenuTitle"), art=R(ART))
 	
 	core.BuildMainMenu(dir, StreamMenu)
 	
@@ -106,7 +74,7 @@ def MainMenu():
 	 	
 		 
 def StreamMenu(gameId, title):
-	dir = ObjectContainer(title2 = title, art=R(ICON))
+	dir = ObjectContainer(title2 = title, art=R(ART))
 	
 	try:
 		core.BuildStreamMenu(dir, gameId)	

@@ -1,13 +1,14 @@
 {
-	"MainMenuTitle": "NHL",
+	"MainMenuTitle": "Hockey Streams",
 	"ErrorNoGames": "No games could be found.",
 	"ErrorNoStreams": "No streams could be found for this game.",
 	"ErrorStreamsNotReady": "Streams can't be accessed more than {minutes} minutes before game time.",
 	"HomeStreamLabelFormat": "Home Stream ({city})",
 	"AwayStreamLabelFormat": "Away Stream ({city})",
 	"MatchupFormat": "{away} at {home} - {time}",
-	"MatchupFormatiOS": "{away} at {home} - {time}",
-	"MatchupFormatAndroid": "{away} at {home} - {time}",
+	"MatchupFormatWindows": "{away} at {home}",
+	"MatchupFormatLinux": "{away} at {home}",
+	"MatchupFormatMacOSX": "{away} at {home}",
 	"SummaryFormat": "Game time: {time}",
 	
 }

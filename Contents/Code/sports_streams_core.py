@@ -21,10 +21,10 @@ CONFIG = None
 ###############################################
 
 # This method should be called first by sport plugins.
-def Init(title, sportKeyword, streamFormat, teamNames):
+def Init(title, sportKeyword, streamFormat, teamNames, defaultTeamIcon):
 	Log.Debug("Core.Init()")
 	global CONFIG
-	CONFIG = Config(title, sportKeyword, streamFormat, teamNames)
+	CONFIG = Config(title, sportKeyword, streamFormat, teamNames, defaultTeamIcon)
 	
 
 class NotAvailableException(Exception):
@@ -34,11 +34,12 @@ class NotAvailableException(Exception):
 
 	
 class Config:
-	def __init__(self, title, sportKeyword, streamFormat, teams):
+	def __init__(self, title, sportKeyword, streamFormat, teams, defaultTeamIcon):
 		self.Title = title
 		self.SportKeyword = sportKeyword
 		self.StreamFormat = streamFormat
 		self.Teams = teams
+		self.DefaultTeamIcon = defaultTeamIcon 
 		
 
 class Game:
@@ -109,11 +110,11 @@ def BuildStreamMenu(container, gameId):
 	
 	for stream in streams:
 		stream.Url = stream.Url.replace(QUALITY_MARKER, quality)
-		team = CONFIG.Teams[stream.Team]["Name"]
+		team = GetTeamConfig(stream.Team)
 		container.add(VideoClipObject(
 			url = stream.Url,
-			title = str(stream.Title).replace("{city}", team),
-			thumb = CONFIG.Teams[stream.Team]["Logo"] 
+			title = str(stream.Title).replace("{city}", team["Name"]),
+			thumb = team["Logo"]  
 		))
 	
 def GetStreamFormatString(key):
@@ -132,15 +133,34 @@ def GetStreamFormat(format, awayTeam, homeTeam, utcStart):
 	localStart = utcStart.astimezone(HERE).strftime("%H:%M")
 	#Log.Debug("localStart: " + str(localStart))
 	
-	away = CONFIG.Teams[awayTeam]["City"] + " " + CONFIG.Teams[awayTeam]["Name"]
-	home = CONFIG.Teams[homeTeam]["City"] + " " + CONFIG.Teams[homeTeam]["Name"]
+	#away = CONFIG.Teams[awayTeam]["City"] + " " + CONFIG.Teams[awayTeam]["Name"]
+	#home = CONFIG.Teams[homeTeam]["City"] + " " + CONFIG.Teams[homeTeam]["Name"]
+	away = FormatTeamName(awayTeam)
+	home = FormatTeamName(homeTeam)
 	
 	return str(format).replace("{away}", away).replace("{home}", home).replace("{time}", localStart)
+	
+def GetTeamConfig(team):
+	if team in CONFIG.Teams:
+		return CONFIG.Teams[team]
+	else:
+		# create a new team so it's null safe 
+		Log.Info("Could not find team configuration for '" + team + "'")
+		return { "City": team, "Name": team, "Logo": CONFIG.DefaultTeamIcon }
+		
+def FormatTeamName(team):
+	teamConfig = GetTeamConfig(team)
+	
+	if teamConfig["City"] == teamConfig["Name"]:
+		return teamConfig["City"]
+	else:
+		return teamConfig["City"] + " " + teamConfig["Name"]
 	
 def NeedsPreferencesItem():
 	# Rather than only show it for some items, we'll show for all and hide for some.
 	# The list of those that don't need it is probably shorter and doesn't include hard to predict ones like browers
-	if Client.Platform in [ClientPlatform.iOS, ClientPlatform.Android]:
+	# Showing it for iOS now, so it works with plex connect
+	if Client.Platform in [ClientPlatform.Android]:
 		return False
 	else:
 		return True
