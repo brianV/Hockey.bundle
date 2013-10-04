@@ -1,0 +1,13 @@
+{
+	"MainMenuTitle": "NHL",
+	"ErrorNoGames": "No games could be found.",
+	"ErrorNoStreams": "No streams could be found for this game.",
+	"ErrorStreamsNotReady": "Streams can't be accessed more than {minutes} minutes before game time.",
+	"HomeStreamLabelFormat": "Home Stream ({city})",
+	"AwayStreamLabelFormat": "Away Stream ({city})",
+	"MatchupFormat": "{away} at {home} - {time}",
+	"MatchupFormatiOS": "{away} at {home} - {time}",
+	"MatchupFormatAndroid": "{away} at {home} - {time}",
+	"SummaryFormat": "Game time: {time}",
+	
+}
