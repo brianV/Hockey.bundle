@@ -10,7 +10,7 @@ from dateutil import tz
 SEARCH_URL = "http://www.reddit.com/r/Sports_Streams/search.rss?q={sport}&sort=new&t=week&restrict_sr=on"
 QUALITY_MARKER = "{q}" 
 
-STREAM_AVAILABLE_MINUTES_BEFORE = 2000
+STREAM_AVAILABLE_MINUTES_BEFORE = 20
 STREAM_HIDDEN_AFTER = 360 # 6 hours oughta be plenty...
 
 HERE = tz.tzlocal()
@@ -114,7 +114,7 @@ def BuildStreamMenu(container, gameId):
 		container.add(VideoClipObject(
 			url = stream.Url,
 			title = str(stream.Title).replace("{city}", team["Name"]),
-			thumb = team["Logo"]  
+			thumb = R(team["Logo"])
 		))
 	
 def GetStreamFormatString(key):
@@ -280,15 +280,17 @@ def GetGameStreams(gameId, stream_format):
 		if game.HomeServer != "":
 			title = str(L("HomeStreamLabelFormat"))
 			desc = GetStreamFormat(matchupFormat, game.AwayCity, game.HomeCity, game.UtcStart)
+			homeTeam = GetTeamConfig(game.HomeCity)
 			#Log.Debug("description: " + desc)
-			url = stream_format.replace("{server}", game.HomeServer).replace("{streamName}", game.HomeStreamName).replace("{city}", game.HomeCity).replace("{desc}", desc)
+			url = stream_format.replace("{server}", game.HomeServer).replace("{streamName}", game.HomeStreamName).replace("{city}", game.HomeCity).replace("{desc}", desc).replace("{logo}", homeTeam["Logo"])
 			Log.Debug("url: " + url)
 			streams.append(Stream(title, url, game.HomeCity, available))
 			
 		if game.AwayServer != "":
 			title = str(L("AwayStreamLabelFormat"))
 			desc = GetStreamFormat(matchupFormat, game.AwayCity, game.HomeCity, game.UtcStart)
-			url = stream_format.replace("{server}", game.AwayServer).replace("{streamName}", game.AwayStreamName).replace("{city}", game.AwayCity).replace("{desc}", desc)
+			awayTeam = GetTeamConfig(game.AwayCity)
+			url = stream_format.replace("{server}", game.AwayServer).replace("{streamName}", game.AwayStreamName).replace("{city}", game.AwayCity).replace("{desc}", desc).replace("{logo}", awayTeam["Logo"])
 			Log.Debug("url: " + url)
 			streams.append(Stream(title, url, game.AwayCity, available))
 		
