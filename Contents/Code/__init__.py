@@ -13,7 +13,7 @@ ICON = 'icon-default.png'
 DEFAULT_TEAM_ICON = "Team_DEFAULT.jpg"
 
 SPORT_KEYWORD = "hockey"
-STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8?team={city}&desc={desc}&logo={logo}"
+STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8?t={title}&l={logo}&d={desc}"
 
 # the logos here are also referenced in a different collection in ServiceCode.pys, ensure any changes to filenames are copied over there.
 TEAMS = {

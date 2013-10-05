@@ -2,13 +2,13 @@
 	"MainMenuTitle": "Hockey",
 	"ErrorNoGames": "No games could be found.",
 	"ErrorNoStreams": "No streams could be found for this game.",
-	"ErrorStreamsNotReady": "Streams can't be accessed more than {minutes} minutes before game time.",
+	"ErrorStreamsNotReady": "Stream available {minutes} minutes before game time.",
 	"HomeStreamLabelFormat": "Home Stream ({city})",
 	"AwayStreamLabelFormat": "Away Stream ({city})",
 	"MatchupFormat": "{away} at {home} - {time}",
 	"MatchupFormatWindows": "{away} at {home}",
 	"MatchupFormatLinux": "{away} at {home}",
 	"MatchupFormatMacOSX": "{away} at {home}",
-	"SummaryFormat": "Game time: {time}",
+	"SummaryFormat": "Game time: {time} - {summary}",
 	
 }

@@ -9,14 +9,15 @@ def MetadataObjectForURL(url):
 	parts = urlparse.urlparse(url)	
 	query = urlparse.parse_qs(parts.query)
 	
-	team = query["team"][0]
-	title = query["desc"][0]	
-	logo = query["logo"][0]
+	title = query["t"][0]	
+	logo = query["l"][0]
+	desc = query["d"][0]
 
     # Construct a metadata item
 	return VideoClipObject(
 		title = title,
-		thumb=R(logo)
+		thumb=R(logo),
+		summary = desc
 	)
 
 ####################################################################################################
