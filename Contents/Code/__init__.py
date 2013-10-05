@@ -78,7 +78,8 @@ def StreamMenu(gameId, title):
 	
 	try:
 		core.BuildStreamMenu(dir, gameId)	
-	except core.NotAvailableException as ex:
+	#except core.NotAvailableException as ex:
+	except core.NotAvailableException, ex:
 		message = str(L("ErrorStreamsNotReady")).replace("{minutes}", str(ex.Minutes))
 		return ObjectContainer(header=L("MainMenuTitle"), message=message)	
 	

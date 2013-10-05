@@ -11,12 +11,12 @@ SEARCH_URL = "http://www.reddit.com/r/Sports_Streams/search.rss?q={sport}&sort=n
 QUALITY_MARKER = "{q}" 
 
 STREAM_AVAILABLE_MINUTES_BEFORE = 20
-STREAM_HIDDEN_AFTER = 360 # 6 hours oughta be plenty...
+STREAM_HIDDEN_AFTER = 360 # 6 hours oughta be plenty... 
 
 HERE = tz.tzlocal()
 UTC = tz.gettz("UTC")
 
-CONFIG = None
+CONFIG = None 
 
 ###############################################
 
