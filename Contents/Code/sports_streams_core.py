@@ -8,7 +8,6 @@ from dateutil import tz
 # THE CODE SHOULD BE REUSABLE REGARDLESS OF THE SPORT.
 
 SEARCH_URL = "http://www.reddit.com/r/Sports_Streams/search.rss?q={sport}&sort=new&t=week&restrict_sr=on"
-QUALITY_MARKER = "{q}" 
 
 STREAM_AVAILABLE_MINUTES_BEFORE = 20
 STREAM_HIDDEN_AFTER = 360 # 6 hours oughta be plenty...
@@ -21,10 +20,10 @@ CONFIG = None
 ###############################################
 
 # This method should be called first by sport plugins.
-def Init(title, sportKeyword, streamFormat, teamNames, defaultTeamIcon):
+def Init(title, sportKeyword, streamFormat, teamNames, defaultTeamIcon, qualityMarker, qualityValues):
 	Log.Debug("Core.Init()")
 	global CONFIG
-	CONFIG = Config(title, sportKeyword, streamFormat, teamNames, defaultTeamIcon)
+	CONFIG = Config(title, sportKeyword, streamFormat, teamNames, defaultTeamIcon, qualityMarker, qualityValues)
 	
 
 class NotAvailableException(Exception):
@@ -37,12 +36,15 @@ class NoGamesException(Exception):
 
 	
 class Config:
-	def __init__(self, title, sportKeyword, streamFormat, teams, defaultTeamIcon):
+	def __init__(self, title, sportKeyword, streamFormat, teams, defaultTeamIcon, qualityMarker, qualityValues):
 		self.Title = title
 		self.SportKeyword = sportKeyword
 		self.StreamFormat = streamFormat
 		self.Teams = teams
-		self.DefaultTeamIcon = defaultTeamIcon 
+		self.DefaultTeamIcon = defaultTeamIcon
+		self.QualityMarker = qualityMarker
+		self.QualityValues = qualityValues
+		
 		
 
 class Game:
@@ -59,12 +61,13 @@ class Game:
 				
 		
 class Stream:
-	def __init__(self, title, url, team, available, summary):
+	def __init__(self, title, url, team, available, summary, streamName):
 		self.Title = title
 		self.Url = url
 		self.Team = team
 		self.Available = available
 		self.Summary = summary
+		self.StreamName = streamName
 	
 ###############################################	
 
@@ -104,14 +107,12 @@ def BuildMainMenu(container, streamCallBack):
 	if len(container) == 0:
 		raise NoGamesException
 
-	Log.Debug("Request from platform: " + Client.Platform)
-	if NeedsPreferencesItem():
-		Log.Debug("Adding preferences menu item")
-		container.add(PrefsObject(title="Preferences", summary="Change the stream bitrate.", thumb=R("icon-prefs.png")))
+	#if NeedsPreferencesItem():
+	#	Log.Debug("Adding preferences menu item")
+	#	container.add(PrefsObject(title="Preferences", summary="Change the stream bitrate.", thumb=R("icon-prefs.png")))
 
-	
-def BuildStreamMenu(container, gameId):
-		
+
+def BuildGameMenu(container, gameId, streamCallback):
 	streams, available = GetGameStreams(gameId, CONFIG.StreamFormat)
 	
 	quality = Prefs["videoQuality"]
@@ -120,13 +121,26 @@ def BuildStreamMenu(container, gameId):
 		raise NotAvailableException
 	
 	for stream in streams:
-		stream.Url = stream.Url.replace(QUALITY_MARKER, quality)
-		team = GetTeamConfig(stream.Team)
-		Log.Debug("Logo: " + team["Logo"])
-		container.add(VideoClipObject(
-			url = stream.Url,
-			title = str(stream.Title).replace("{city}", team["Name"]),
+		team = GetTeamConfig(stream.Team) 
+		title = str(stream.Title).replace("{city}", team["Name"])
+		Log.Debug("title: " + title)
+		container.add(DirectoryObject(
+			key = Callback(streamCallback, title = title, url = stream.Url),
+			title = title,
 			thumb = R(team["Logo"])
+		))
+
+def BuildStreamsMenu(container, url):
+				
+	for quality in CONFIG.QualityValues:
+		streamUrl = url.replace(CONFIG.QualityMarker, quality)
+		Log.Debug("Stream URL: " + streamUrl)
+		
+		#team = GetTeamConfig(stream.Team)
+		container.add(VideoClipObject(
+			url = streamUrl,
+			title = str(quality)
+			#thumb = R(team["Logo"])
 		))
 	
 def GetStreamFormatString(key):
@@ -297,7 +311,7 @@ def GetGameStreams(gameId, stream_format):
 			#Log.Debug("description: " + desc)
 			url = stream_format.replace("{server}", game.HomeServer).replace("{streamName}", game.HomeStreamName).replace("{city}", game.HomeCity).replace("{desc}", desc).replace("{logo}", homeTeam["Logo"])
 			Log.Info("url: " + url)
-			streams.append(Stream(title, url, game.HomeCity, available, game.Summary))
+			streams.append(Stream(title, url, game.HomeCity, available, game.Summary, game.HomeStreamName))
 			
 		if game.AwayServer != "":
 			title = str(L("AwayStreamLabelFormat"))
@@ -305,7 +319,12 @@ def GetGameStreams(gameId, stream_format):
 			awayTeam = GetTeamConfig(game.AwayCity)
 			url = stream_format.replace("{server}", game.AwayServer).replace("{streamName}", game.AwayStreamName).replace("{city}", game.AwayCity).replace("{desc}", desc).replace("{logo}", awayTeam["Logo"])
 			Log.Info("url: " + url)
-			streams.append(Stream(title, url, game.AwayCity, available, game.Summary))
+			streams.append(Stream(title, url, game.AwayCity, available, game.Summary, game.AwayStreamName))
 		
+	# for debugging, so I stop checking in the wrong constant value...
+	if socket.gethostname() == "puddsPC":
+		Log.Debug("Overriding to available = True")
+		available = True
+	
 	return streams, available
 

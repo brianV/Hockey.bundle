@@ -14,7 +14,6 @@
 				<key>URLPatterns</key>
 				<array>
 					<string>^http://nlds.+.cdnak.neulion.com/nlds/nhl/.+</string>
-					<string>^http://boulder.zxq.net.+</string>
 				</array>
 			</dict>
 		</dict>

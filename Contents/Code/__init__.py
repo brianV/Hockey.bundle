@@ -15,6 +15,8 @@ DEFAULT_TEAM_ICON = "Team_DEFAULT.jpg"
 SPORT_KEYWORD = "hockey"
 #STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8?t={title}&l={logo}&d={desc}"
 STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
+QUALITY_MARKER = "{q}"
+QUALITIES = [ "4500", "3000", "1600", "1200", "800", "400" ]
 
 # the logos here are also referenced in a different collection in ServiceCode.pys, ensure any changes to filenames are copied over there.
 TEAMS = {
@@ -62,7 +64,7 @@ def Start():
 	
 	ObjectContainer.title1 = NAME
 	
-	core.Init(NAME, SPORT_KEYWORD, STREAM_FORMAT, TEAMS, DEFAULT_TEAM_ICON)
+	core.Init(NAME, SPORT_KEYWORD, STREAM_FORMAT, TEAMS, DEFAULT_TEAM_ICON, QUALITY_MARKER, QUALITIES)
 	
 	Log.Debug("Plugin Start")
 
@@ -70,7 +72,7 @@ def MainMenu():
 	dir = ObjectContainer(title2 = Locale.LocalString("MainMenuTitle"), art=R(ART))
 	
 	try:
-		core.BuildMainMenu(dir, StreamMenu)
+		core.BuildMainMenu(dir, GameMenu)
 	except core.NoGamesException:
 		Log.Debug("no games")
 		return ObjectContainer(header=L("MainMenuTitle"), message=L("ErrorNoGames")) 
@@ -78,11 +80,11 @@ def MainMenu():
 	return dir
 	 	
 		 
-def StreamMenu(gameId, title):
+def GameMenu(gameId, title):
 	dir = ObjectContainer(title2 = title, art=R(ART))
 	
 	try:
-		core.BuildStreamMenu(dir, gameId)	
+		core.BuildGameMenu(dir, gameId, StreamsMenu)	
 	#except core.NotAvailableException as ex:
 	except core.NotAvailableException, ex:
 		message = str(L("ErrorStreamsNotReady")).replace("{minutes}", str(ex.Minutes))
@@ -90,4 +92,9 @@ def StreamMenu(gameId, title):
 	
 	return dir
 	
+def StreamsMenu(title, url):
+	dir = ObjectContainer(title2 = title, art=R(ART))
 	
+	core.BuildStreamsMenu(dir, url)
+	
+	return dir
