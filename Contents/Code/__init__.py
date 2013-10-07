@@ -68,7 +68,11 @@ def Start():
 def MainMenu():
 	dir = ObjectContainer(title2 = Locale.LocalString("MainMenuTitle"), art=R(ART))
 	
-	core.BuildMainMenu(dir, StreamMenu)
+	try:
+		core.BuildMainMenu(dir, StreamMenu)
+	except core.NoGamesException:
+		Log.Debug("no games")
+		return ObjectContainer(header=L("MainMenuTitle"), message=L("ErrorNoGames")) 
 	
 	return dir
 	 	
