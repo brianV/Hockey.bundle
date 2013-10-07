@@ -13,6 +13,8 @@ def MetadataObjectForURL(url):
 	#logo = query["l"][0]
 	#desc = query["d"][0]
 	
+	Log.Info("Generate Hockey metadata for " + url)
+	
 	title = "Game Stream"
 	desc = ""
 	logo = R("TEAM_Default.jpg")
