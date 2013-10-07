@@ -1,4 +1,4 @@
-import re, urlparse, string, datetime
+import re, urlparse, string, datetime, socket, sys
 from dateutil import parser
 from dateutil import tz
 
@@ -69,6 +69,12 @@ class Stream:
 ###############################################	
 
 def BuildMainMenu(container, streamCallBack):
+	
+	# log some details about the request	
+	Log.Info("Hostname: " + socket.gethostname())
+	Log.Info("Python Version: " + sys.version)
+	Log.Info("Platform: " + sys.platform)
+	Log.Info("Client: " + str(Client.Platform)) # cast as string in case it's a null
 	
 	items = GetGameList()
 	
