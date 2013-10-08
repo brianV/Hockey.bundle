@@ -60,6 +60,8 @@ def Start():
 	Plugin.AddPrefixHandler(VIDEO_PREFIX, MainMenu, NAME, ICON, ART)
 	Plugin.AddViewGroup("List", viewMode = "InfoList", mediaType = "items")
 	
+	HTTP.SetHeader('User-agent', 'iPhone')
+	
 	ObjectContainer.title1 = NAME
 	
 	core.Init(NAME, SPORT_KEYWORD, STREAM_FORMAT, TEAMS, DEFAULT_TEAM_ICON)
