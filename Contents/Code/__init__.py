@@ -92,9 +92,9 @@ def GameMenu(gameId, title):
 	
 	return dir
 	
-def StreamsMenu(title, url):
+def StreamsMenu(title, url, logo):
 	dir = ObjectContainer(title2 = title, art=R(ART))
 	
-	core.BuildStreamsMenu(dir, url)
+	core.BuildStreamsMenu(dir, url, logo)
 	
 	return dir

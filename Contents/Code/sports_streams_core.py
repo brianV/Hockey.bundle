@@ -125,22 +125,23 @@ def BuildGameMenu(container, gameId, streamCallback):
 		title = str(stream.Title).replace("{city}", team["Name"])
 		Log.Debug("title: " + title)
 		container.add(DirectoryObject(
-			key = Callback(streamCallback, title = title, url = stream.Url),
+			key = Callback(streamCallback, title = title, url = stream.Url, logo = team["Logo"]),
 			title = title,
 			thumb = R(team["Logo"])
 		))
 
-def BuildStreamsMenu(container, url):
+def BuildStreamsMenu(container, url, logo):
 				
 	for quality in CONFIG.QualityValues:
 		streamUrl = url.replace(CONFIG.QualityMarker, quality)
 		Log.Debug("Stream URL: " + streamUrl)
 		
 		#team = GetTeamConfig(stream.Team)
-		container.add(VideoClipObject(
+		container.add(VideoClipObject( 
 			url = streamUrl,
-			title = str(quality)
-			#thumb = R(team["Logo"])
+			title = str(quality),
+			summary = "Test summary blah blah blah this is boring shit blah blah blah",
+			thumb = R(logo)
 		))
 	
 def GetStreamFormatString(key):
