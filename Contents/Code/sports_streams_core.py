@@ -97,30 +97,24 @@ def BuildMainMenu(container, streamCallBack):
 			title = title,
 			summary = summary,
 			thumb = R(CONFIG.DefaultTeamIcon)
-		))
-		
+		))		
 		 
 	# display empty message
 	if len(container) == 0:
 		raise NoGamesException
 
-	Log.Debug("Request from platform: " + Client.Platform)
-	if NeedsPreferencesItem():
-		Log.Debug("Adding preferences menu item")
-		container.add(PrefsObject(title="Preferences", summary="Change the stream bitrate.", thumb=R("icon-prefs.png")))
-
-	
+		
 def BuildStreamMenu(container, gameId):
 		
 	streams, available = GetGameStreams(gameId, CONFIG.StreamFormat)
 	
-	quality = Prefs["videoQuality"]
+	#quality = Prefs["videoQuality"]
 	
 	if not available:
 		raise NotAvailableException
 	
 	for stream in streams:
-		stream.Url = stream.Url.replace(QUALITY_MARKER, quality)
+		#stream.Url = stream.Url.replace(QUALITY_MARKER, quality)
 		team = GetTeamConfig(stream.Team)
 		Log.Debug("Logo: " + team["Logo"])
 		container.add(VideoClipObject(

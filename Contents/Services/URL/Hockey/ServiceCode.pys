@@ -30,19 +30,35 @@ def MetadataObjectForURL(url):
 def MediaObjectsForURL(url):
 
 	return [
-		 MediaObject(
-			optimized_for_streaming=True,
-			parts = [PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, url=url)))],
-			audio_channels = 2,
-			container = Container.MP4
-		)
+		GetMediaObject(url, 4500, 1080, 120), # this is a lie, this stream is really 720 and 120 fps.  but plex only shows the resolution, so lets lie a bit and make it clearer for the user
+		GetMediaObject(url, 3000, 720, 60),
+		GetMediaObject(url, 1600, 540, 60),
+		GetMediaObject(url, 1200, 432, 60),
+		GetMediaObject(url, 800, 360, 60),
+		GetMediaObject(url, 400, 224, 60)
 	]
+	
+def GetMediaObject(url, quality, resolution, framerate):
+	return MediaObject(
+			optimized_for_streaming=True,
+			parts = [PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, url=url, quality=str(quality))))],
+			audio_codec = AudioCodec.AAC,
+			audio_channels = 2,
+			container = Container.MP4,
+			bitrate = quality,
+			video_resolution = resolution,
+			video_frame_rate = framerate
+		)
 
 
 ####################################################################################################
-def PlayVideo(url):
+def PlayVideo(url, quality):
 	
-	Log.Debug("service PlayVideo: " + url)
+	Log.Debug("service PlayVideo: " + url + " q=" + quality)
+	
+	url = url.replace("{q}", quality)
+	
+	Log.Debug("Corrected URL: " + url)
 	
 	playlist = HTTP.Request(url, follow_redirects=False).content
 	
