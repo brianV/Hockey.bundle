@@ -10,5 +10,8 @@
 	"MatchupFormatLinux": "{away} at {home}",
 	"MatchupFormatMacOSX": "{away} at {home}",
 	"SummaryFormat": "Game time: {time} - {summary}",
-	
+	"TodayLabel": "Today",
+	"TomorrowLabel": "Tomorrow",
+	"ArchiveLabel": "Archive",
+	"ScheduleDateFormat": "%b %d",
 }

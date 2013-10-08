@@ -1,4 +1,4 @@
-import re, urlparse, string, datetime, socket, sys
+import re, urlparse, string, socket, sys, datetime
 from dateutil import parser
 from dateutil import tz
 
@@ -12,9 +12,12 @@ QUALITY_MARKER = "{q}"
 
 STREAM_AVAILABLE_MINUTES_BEFORE = 20
 STREAM_HIDDEN_AFTER = 360 # 6 hours oughta be plenty...
+MAIN_MENU_EXTRA_DAYS = 3 # day count not including today and tomorrow
+DATE_FORMAT = "%Y-%m-%d"
 
 HERE = tz.tzlocal()
 UTC = tz.gettz("UTC")
+EASTERN = tz.gettz("EST5EDT")
 
 CONFIG = None
 
@@ -42,7 +45,7 @@ class Config:
 		self.SportKeyword = sportKeyword
 		self.StreamFormat = streamFormat
 		self.Teams = teams
-		self.DefaultTeamIcon = defaultTeamIcon 
+		self.DefaultTeamIcon = defaultTeamIcon
 		
 
 class Game:
@@ -68,13 +71,54 @@ class Stream:
 	
 ###############################################	
 
-def BuildMainMenu(container, streamCallBack):
-	
+def BuildMainMenu(container, scheduleCallback, archiveCallback):	
 	# log some details about the request	
 	Log.Info("Hostname: " + socket.gethostname())
 	Log.Info("Python Version: " + sys.version)
 	Log.Info("Platform: " + sys.platform)
 	Log.Info("Client: " + str(Client.Platform)) # cast as string in case it's a null
+
+	# make sure these times, which are used to make calls to the nhl servers, are always in eastern time.
+	todayDate = GetEasternNow()
+	tomorrowDate = todayDate + datetime.timedelta(days = 1)
+	
+	today = datetime.datetime.strftime(todayDate, DATE_FORMAT)
+	tomorrow = datetime.datetime.strftime(tomorrowDate, DATE_FORMAT)
+	
+	container.add(GetMainMenuItem(L("TodayLabel"), Callback(scheduleCallback, date = today)))
+	container.add(GetMainMenuItem(L("TomorrowLabel"), Callback(scheduleCallback, date = tomorrow)))
+	
+	dateFormat = str(L("ScheduleDateFormat")) # strftime can't take a localstring for some reason.	
+	for x in range(1, MAIN_MENU_EXTRA_DAYS + 1):
+		date = tomorrowDate + datetime.timedelta(days = x)
+		dateString = datetime.datetime.strftime(date, dateFormat)
+		title = dateString
+		container.add(GetMainMenuItem(title, Callback(scheduleCallback, date = dateString)))
+		
+	#archive
+	container.add(GetMainMenuItem(L("ArchiveLabel"), Callback(archiveCallback)))
+	
+	
+def GetMainMenuItem(title, callbackKey):
+	return DirectoryObject(
+		key = callbackKey,
+		title = title,
+		thumb = R(CONFIG.DefaultTeamIcon) 
+	)
+	
+def GetEasternNow():
+	#utcNow = datetime.strptime(str(datetime.utcnow()), "%Y-%m-%d %H:%M:%S")
+	utcNow = datetime.datetime.utcnow()
+	utcNow = utcNow.replace(tzinfo = tz.tzutc())
+	Log.Debug("UTC Now: " + str(utcNow))
+	
+	easternNow = utcNow.astimezone(EASTERN)
+	Log.Debug("Eastern Now: " + str(easternNow))
+	
+	return easternNow
+
+def BuildMainMenu2(container, streamCallBack):
+	
 	
 	items = GetGameList()
 	

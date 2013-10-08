@@ -69,14 +69,24 @@ def Start():
 def MainMenu():
 	dir = ObjectContainer(title2 = Locale.LocalString("MainMenuTitle"), art=R(ART))
 	
-	try:
-		core.BuildMainMenu(dir, StreamMenu)
-	except core.NoGamesException:
-		Log.Debug("no games")
-		return ObjectContainer(header=L("MainMenuTitle"), message=L("ErrorNoGames")) 
+	#try:
+	core.BuildMainMenu(dir, ScheduleMenu, ArchiveMenu)
+	#except core.NoGamesException:
+	#	Log.Debug("no games")
+	#	return ObjectContainer(header=L("MainMenuTitle"), message=L("ErrorNoGames")) 
 	
 	return dir
 	 	
+def ScheduleMenu(date):	
+	dir = ObjectContainer(title2 = "TEMP", art=R(ART))
+	
+	return dir
+	
+def ArchiveMenu():
+	dir = ObjectContainer(title2 = "TEMP", art=R(ART))
+	
+	return dir
+	
 		 
 def StreamMenu(gameId, title):
 	dir = ObjectContainer(title2 = title, art=R(ART))
