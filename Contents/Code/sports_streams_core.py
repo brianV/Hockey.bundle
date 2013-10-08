@@ -307,5 +307,10 @@ def GetGameStreams(gameId, stream_format):
 			Log.Info("url: " + url)
 			streams.append(Stream(title, url, game.AwayCity, available, game.Summary))
 		
+	# for debugging, so I stop checking in the wrong constant value...
+	if socket.gethostname() in ("puddsPC", "Poseidon"):
+		Log.Debug("Overriding to available = True")
+		available = True
+	
 	return streams, available
 
