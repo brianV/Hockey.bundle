@@ -41,9 +41,9 @@ TEAMS = {
 	"PHI": { "City": "Philadelphia", "Name": "Flyers", "Logo": "Team_PHI.jpg"},
 	"PHX": { "City": "Phoenix", "Name": "Coyotes", "Logo": "Team_PHX.jpg"},
 	"PIT": { "City": "Pittsburgh", "Name": "Penguins", "Logo": "Team_PIT.jpg"},
-	"SAN": { "City": "San Jose", "Name": "Sharks", "Logo": "Team_SAN.jpg"},
+	"SJS": { "City": "San Jose", "Name": "Sharks", "Logo": "Team_SAN.jpg"},
 	"STL": { "City": "St. Louis", "Name": "Blues", "Logo": "Team_STL.jpg"},
-	"TAM": { "City": "Tampa Bay", "Name": "Lightning", "Logo": "Team_TAM.jpg"},
+	"TBL": { "City": "Tampa Bay", "Name": "Lightning", "Logo": "Team_TAM.jpg"},
 	"TOR": { "City": "Toronto", "Name": "Maple Leafs", "Logo": "Team_TOR.jpg"},
 	"VAN": { "City": "Vancouver", "Name": "Canucks", "Logo": "Team_VAN.jpg"},
 	"WPG": { "City": "Winnipeg", "Name": "Jets", "Logo": "Team_WPG.jpg"},
@@ -58,7 +58,7 @@ def Start():
 
 	# Initialize the plugin
 	Plugin.AddPrefixHandler(VIDEO_PREFIX, MainMenu, NAME, ICON, ART)
-	Plugin.AddViewGroup("LIST", viewMode = "List", mediaType = "items")
+	Plugin.AddViewGroup("List", viewMode = "InfoList", mediaType = "items")
 	
 	ObjectContainer.title1 = NAME
 	
@@ -67,7 +67,7 @@ def Start():
 	Log.Debug("Plugin Start")
 
 def MainMenu():
-	dir = ObjectContainer(title2 = Locale.LocalString("MainMenuTitle"), art=R(ART))
+	dir = ObjectContainer(title2 = L("MainMenuTitle"), art=R(ART), view_group = "List")
 	
 	#try:
 	core.BuildMainMenu(dir, ScheduleMenu, ArchiveMenu)
@@ -75,15 +75,37 @@ def MainMenu():
 	#	Log.Debug("no games")
 	#	return ObjectContainer(header=L("MainMenuTitle"), message=L("ErrorNoGames")) 
 	
+	Log.Debug("View Groups")
+	
+	for item in Plugin.ViewGroups:
+		Log.Debug(str(item))
+	
 	return dir
 	 	
-def ScheduleMenu(date):	
-	dir = ObjectContainer(title2 = "TEMP", art=R(ART))
+def ScheduleMenu(date, title):	
+	dir = ObjectContainer(title2 = title, art=R(ART), view_group = "List")
+	
+	try:
+		core.BuildScheduleMenu(dir, date, GameMenu, MainMenu)
+	except core.NoGamesException:
+		dir.add(DirectoryObject(
+			key = Callback(ScheduleMenu, date=date), # call back to itself makes it go nowhere - in some clients anyway.
+			title = L("ErrorNoGames"),
+			thumb = R(DEFAULT_TEAM_ICON)
+		))
+		
 	
 	return dir
 	
 def ArchiveMenu():
 	dir = ObjectContainer(title2 = "TEMP", art=R(ART))
+	
+	return dir
+	
+def GameMenu(gameId, title):
+	dir = ObjectContainer(title2 = title, art=R(ART))
+	
+	
 	
 	return dir
 	

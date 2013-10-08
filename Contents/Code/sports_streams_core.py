@@ -16,7 +16,7 @@ MAIN_MENU_EXTRA_DAYS = 3 # day count not including today and tomorrow
 DATE_FORMAT = "%Y-%m-%d"
 
 HERE = tz.tzlocal()
-UTC = tz.gettz("UTC")
+UTC = tz.tzutc()
 EASTERN = tz.gettz("EST5EDT")
 
 CONFIG = None
@@ -49,15 +49,11 @@ class Config:
 		
 
 class Game:
-	def __init__(self, id, utcStart, homeCity, awayCity, homeServer, awayServer, homeStreamName, awayStreamName, summary):
+	def __init__(self, id, utcStart, awayAbbreviation, homeAbbreviation, summary):
 		self.ID = id
 		self.UtcStart = utcStart
-		self.HomeCity = homeCity
-		self.AwayCity = awayCity
-		self.HomeServer = homeServer
-		self.AwayServer = awayServer
-		self.HomeStreamName = homeStreamName
-		self.AwayStreamName = awayStreamName
+		self.AwayAbbreviation = awayAbbreviation
+		self.HomeAbbreviation = homeAbbreviation
 		self.Summary = summary
 				
 		
@@ -85,77 +81,55 @@ def BuildMainMenu(container, scheduleCallback, archiveCallback):
 	today = datetime.datetime.strftime(todayDate, DATE_FORMAT)
 	tomorrow = datetime.datetime.strftime(tomorrowDate, DATE_FORMAT)
 	
-	container.add(GetMainMenuItem(L("TodayLabel"), Callback(scheduleCallback, date = today)))
-	container.add(GetMainMenuItem(L("TomorrowLabel"), Callback(scheduleCallback, date = tomorrow)))
+	container.add(GetMainMenuItem(L("TodayLabel"), Callback(scheduleCallback, date = today, title = L("TodayLabel"))))
+	container.add(GetMainMenuItem(L("TomorrowLabel"), Callback(scheduleCallback, date = tomorrow, title = L("TomorrowLabel"))))
 	
 	dateFormat = str(L("ScheduleDateFormat")) # strftime can't take a localstring for some reason.	
 	for x in range(1, MAIN_MENU_EXTRA_DAYS + 1):
 		date = tomorrowDate + datetime.timedelta(days = x)
 		dateString = datetime.datetime.strftime(date, dateFormat)
 		title = dateString
-		container.add(GetMainMenuItem(title, Callback(scheduleCallback, date = dateString)))
+		container.add(GetMainMenuItem(title, Callback(scheduleCallback, date = dateString, title = title)))
 		
 	#archive
 	container.add(GetMainMenuItem(L("ArchiveLabel"), Callback(archiveCallback)))
+			
+	if NeedsPreferencesItem():
+		Log.Debug("Adding preferences menu item")
+		container.add(PrefsObject(title="Preferences", summary="Change the stream bitrate.", thumb=R("icon-prefs.png")))
 	
 	
 def GetMainMenuItem(title, callbackKey):
 	return DirectoryObject(
 		key = callbackKey,
 		title = title,
-		thumb = R(CONFIG.DefaultTeamIcon) 
+		thumb = R(CONFIG.DefaultTeamIcon)
 	)
 	
-def GetEasternNow():
-	#utcNow = datetime.strptime(str(datetime.utcnow()), "%Y-%m-%d %H:%M:%S")
-	utcNow = datetime.datetime.utcnow()
-	utcNow = utcNow.replace(tzinfo = tz.tzutc())
-	Log.Debug("UTC Now: " + str(utcNow))
+def BuildScheduleMenu(container, date, gameCallback, mainMenuCallback):
+	# get games
+	games = GetGamesForDay(date)
 	
-	easternNow = utcNow.astimezone(EASTERN)
-	Log.Debug("Eastern Now: " + str(easternNow))
-	
-	return easternNow
-
-def BuildMainMenu2(container, streamCallBack):
-	
-	
-	items = GetGameList()
-	
+	if len(games) == 0:
+		# no games
+		raise NoGamesException
+		
 	matchupFormat = GetStreamFormatString("MatchupFormat")
 	summaryFormat = GetStreamFormatString("SummaryFormat")
-	
-	for item in items:
 		 
-		#away = CONFIG.Teams[item.AwayCity]["City"] + " " + CONFIG.Teams[item.AwayCity]["Name"]
-		#home = CONFIG.Teams[item.HomeCity]["City"] + " " + CONFIG.Teams[item.HomeCity]["Name"]
-
-		#title = str(matchupFormat).replace("{away}", away).replace("{home}", home).replace("{time}", localStart)
-		#summary = str(summaryFormat).replace("{away}", away).replace("{home}", home).replace("{time}", localStart)
-		
-		title = GetStreamFormat(matchupFormat, item.AwayCity, item.HomeCity, item.UtcStart, item.Summary)
-		summary = GetStreamFormat(summaryFormat, item.AwayCity, item.HomeCity, item.UtcStart, item.Summary)
-				
+	for game in games:
+		title = GetStreamFormat(matchupFormat, game.AwayAbbreviation, game.HomeAbbreviation, game.UtcStart, game.Summary)
+		summary = GetStreamFormat(summaryFormat, game.AwayAbbreviation, game.HomeAbbreviation, game.UtcStart, game.Summary)
 		container.add(DirectoryObject(
-			key = Callback(streamCallBack, gameId = item.ID, title = title),
+			key = Callback(gameCallback, gameId = game.ID, title = title),
 			title = title,
 			summary = summary,
 			thumb = R(CONFIG.DefaultTeamIcon)
 		))
-		
-		 
-	# display empty message
-	if len(container) == 0:
-		raise NoGamesException
 
-	Log.Debug("Request from platform: " + Client.Platform)
-	if NeedsPreferencesItem():
-		Log.Debug("Adding preferences menu item")
-		container.add(PrefsObject(title="Preferences", summary="Change the stream bitrate.", thumb=R("icon-prefs.png")))
-
-	
-def BuildStreamMenu(container, gameId):
 		
+def BuildGameMenu(container, date, streamCallback):
+	# get streams for game		
 	streams, available = GetGameStreams(gameId, CONFIG.StreamFormat)
 	
 	quality = Prefs["videoQuality"]
@@ -172,6 +146,55 @@ def BuildStreamMenu(container, gameId):
 			title = str(stream.Title).replace("{city}", team["Name"]),
 			thumb = R(team["Logo"])
 		))
+	
+	
+def GetEasternNow():
+	#utcNow = datetime.strptime(str(datetime.utcnow()), "%Y-%m-%d %H:%M:%S")
+	utcNow = datetime.datetime.utcnow()
+	utcNow = utcNow.replace(tzinfo = UTC)
+	Log.Debug("UTC Now: " + str(utcNow))
+	
+	easternNow = utcNow.astimezone(EASTERN)
+	Log.Debug("Eastern Now: " + str(easternNow))
+	
+	return easternNow
+	
+def GetGamesForDay(date):
+	
+	Log.Info("Get games for " + date)
+	split = date.split("-")
+	year = split[0]
+	month = split[1]
+	day = split[2]
+	
+	#http://nhlwc.cdnak.neulion.com/fs1/nhl/league/schedule/2013/10/06/iphone/schedule.json
+	url = SCHEDULE_URL.replace("{year}", year).replace("{month}", month).replace("{day}", day)
+	
+	Log.Info("Schedule URL: " + url)
+	
+	schedule = JSON.ObjectFromURL(url)	
+	Log.Info("Found " + str(len(schedule["games"])) + " games")
+	
+	games = []
+	
+	for game in schedule["games"]:
+		gameId = game["gameId"]
+		# status = "" when unstarted, "FINAL" when complete, probably something else when in progress.
+		easternStart = datetime.datetime.strptime(date + " " + game["startTime"], "%Y-%m-%d %H:%M:%S")
+		easternStart = easternStart.replace(tzinfo = EASTERN)
+		utcStart = easternStart.astimezone(UTC)
+		awayAbbr = game["a"]["ab"]
+		homeAbbr = game["h"]["ab"] 
+		summary = game["gamePreview"] # gameRecap when completed
+		#self.UtcStart = utcStart
+		#self.HomeCity = homeCity
+		#self.AwayCity = awayCity
+		#self.Summary = summary
+		Log.Debug(awayAbbr + " at " + homeAbbr + " at " + str(easternStart) + "(eastern)/" + str(utcStart) + "(utc)")
+		games.append(Game(gameId, utcStart, awayAbbr, homeAbbr, summary)) 
+		
+	return games
+
 	
 def GetStreamFormatString(key):
 	CLIENT_OS =  Client.Platform
