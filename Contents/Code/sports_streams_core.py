@@ -166,41 +166,59 @@ def BuildScheduleMenu(container, date, gameCallback, mainMenuCallback):
 		))
 
 		
-def BuildGameMenu(container, gameId, streamCallback, highlightsCallback, selectQualityCallback):
+def BuildGameMenu(container, gameId, highlightsCallback, selectQualityCallback):
 		
 	url = GAME_URL.replace("{gameid}", gameId)
 	Log.Debug("Loading game from url: " + url)
-	game = JSON.ObjectFromURL(url) 
+	game = JSON.ObjectFromURL(url)
+	
+	utcStart = parser.parse(game["utcStart"])
+	liveStreamsAvailable = GetMinutesToStart(utcStart) <= STREAM_AVAILABLE_MINUTES_BEFORE
+
+	#replays are always available (assuming the menu item appears), but for clarity, I'll use a variable here too
+	replaysAvailable = True
+	
+	hostname = socket.gethostname()
+	
+	if hostname in ["puddsPC", "Poseidon"]:
+		liveStreamsAvailable = True
+		
+	Log.Debug("Live Streams Available? " + str(liveStreamsAvailable))
 		
 	# if there is a live away stream, add that
 	if game["a"]["live"] != "":
-		container.add(GetStreamDirectory(selectQualityCallback, url, "liveAway", game["a"]["ab"], L("AwayStreamLabelFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "liveAway", game["a"]["ab"], L("AwayStreamLabelFormat"), liveStreamsAvailable))
 
 	if game["h"]["live"] != "":
-		container.add(GetStreamDirectory(selectQualityCallback, url, "liveHome", game["h"]["ab"], L("HomeStreamLabelFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "liveHome", game["h"]["ab"], L("HomeStreamLabelFormat"), liveStreamsAvailable))
 		
 	# replays
 	if game["a"]["replayShort"] != "":
-		container.add(GetStreamDirectory(selectQualityCallback, url, "replayShortAway", game["a"]["ab"], L("AwayReplayCondensedFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "replayShortAway", game["a"]["ab"], L("AwayReplayCondensedFormat"), replaysAvailable))
 	if game["a"]["replayFull"] != "":
-		container.add(GetStreamDirectory(selectQualityCallback, url, "replayFullAway", game["a"]["ab"], L("AwayReplayFullFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "replayFullAway", game["a"]["ab"], L("AwayReplayFullFormat"), replaysAvailable))
 	
 	if game["h"]["replayShort"] != "":
-		container.add(GetStreamDirectory(selectQualityCallback, url, "replayShortHome", game["h"]["ab"], L("HomeReplayCondensedFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "replayShortHome", game["h"]["ab"], L("HomeReplayCondensedFormat"), replaysAvailable))
 	if game["h"]["replayFull"] != "":
-		container.add(GetStreamDirectory(selectQualityCallback, url, "replayFullHome", game["h"]["ab"], L("HomeReplayFullFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "replayFullHome", game["h"]["ab"], L("HomeReplayFullFormat"), replaysAvailable))
 		
 	if len(game["pbp"]) > 0:
 		container.add(GetDirectoryItem(L("HighlightsLabel"), Callback(highlightsCallback, gameId = gameId, title = L("HighlightsLabel"))))
 	
 
+
 def BuildQualitySelectionMenu(container, url, logo):
-	
+		
 	container.add(VideoClipObject(url = url + "4500", title = "4500", thumb = R(logo)))
 	container.add(VideoClipObject(url = url + "3000", title = "3000", thumb = R(logo)))
+	container.add(VideoClipObject(url = url + "1600", title = "1600", thumb = R(logo)))
+	container.add(VideoClipObject(url = url + "1200", title = "1200", thumb = R(logo)))
+	container.add(VideoClipObject(url = url + "800", title = "800", thumb = R(logo)))
+	container.add(VideoClipObject(url = url + "400", title = "400", thumb = R(logo)))
 
 
-def GetStreamDirectory(selectQualityCallback, gameUrl, type, teamAb, titleFormat):
+def GetStreamDirectory(selectQualityCallback, gameUrl, type, teamAb, titleFormat, available):
 	#STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
 	team = GetTeamConfig(teamAb)
 	Log.Debug("Add clip for " + team["City"])
@@ -210,7 +228,7 @@ def GetStreamDirectory(selectQualityCallback, gameUrl, type, teamAb, titleFormat
 	
 	# tie to video prefix..
 	return DirectoryObject(
-		key = Callback(selectQualityCallback, url = url, title = title, logo = team["Logo"]),
+		key = Callback(selectQualityCallback, url = url, title = title, logo = team["Logo"], available = available),
 		title = title,
 		thumb = R(team["Logo"])
 	)
@@ -314,15 +332,6 @@ def FormatTeamName(team):
 	else:
 		return teamConfig["City"] + " " + teamConfig["Name"]
 	
-def NeedsPreferencesItem():
-	# Rather than only show it for some items, we'll show for all and hide for some.
-	# The list of those that don't need it is probably shorter and doesn't include hard to predict ones like browers
-	# Showing it for iOS now, so it works with plex connect
-	if Client.Platform in [ClientPlatform.Android]:
-		return False
-	else:
-		return True
-
 
 def GetMinutesToStart(utcStart):
 	#Python's date handling is horrifically bad.
@@ -332,39 +341,4 @@ def GetMinutesToStart(utcStart):
 	
 	return minutesToStart
 	
-		
-def GetGameStreams(gameId, stream_format):
- 
-	xml = XML.ElementFromString(Data.Load("games"))
-	games = GamesXmlToList(xml)
-	 
-	streams = []
-	UTC = tz.gettz("UTC")
 	
-	matchupFormat = GetStreamFormatString("MatchupFormat")
-	
-	for game in filter(lambda g: g.ID == gameId, games):
-		minutesToStart = GetMinutesToStart(game.UtcStart)
-		Log.Debug("game starts in: " + str(minutesToStart))
-		
-		available = minutesToStart <= STREAM_AVAILABLE_MINUTES_BEFORE
-				  
-		if game.HomeServer != "":
-			title = str(L("HomeStreamLabelFormat"))
-			desc = GetStreamFormat(matchupFormat, game.AwayCity, game.HomeCity, game.UtcStart, game.Summary)
-			homeTeam = GetTeamConfig(game.HomeCity)
-			#Log.Debug("description: " + desc)
-			url = stream_format.replace("{server}", game.HomeServer).replace("{streamName}", game.HomeStreamName).replace("{city}", game.HomeCity).replace("{desc}", desc).replace("{logo}", homeTeam["Logo"])
-			Log.Info("url: " + url)
-			streams.append(Stream(title, url, game.HomeCity, available, game.Summary))
-			
-		if game.AwayServer != "":
-			title = str(L("AwayStreamLabelFormat"))
-			desc = GetStreamFormat(matchupFormat, game.AwayCity, game.HomeCity, game.UtcStart, game.Summary)
-			awayTeam = GetTeamConfig(game.AwayCity)
-			url = stream_format.replace("{server}", game.AwayServer).replace("{streamName}", game.AwayStreamName).replace("{city}", game.AwayCity).replace("{desc}", desc).replace("{logo}", awayTeam["Logo"])
-			Log.Info("url: " + url)
-			streams.append(Stream(title, url, game.AwayCity, available, game.Summary))
-		
-	return streams, available
-

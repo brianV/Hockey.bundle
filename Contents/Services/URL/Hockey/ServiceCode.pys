@@ -69,13 +69,12 @@ def BuildLiveStream(game, data):
 		server = game["a"]["live"]
 	
 	videoUrl = LIVE_STREAM_FORMAT.replace("{server}", server).replace("{streamName}", name).replace("{q}", quality)
+	Log.Debug("Live URL: " + videoUrl)
 	
 	return [
 		 MediaObject(
 			optimized_for_streaming=True,
 			parts = [PartObject(key=HTTPLiveStreamURL(Callback(PlayHLS, url=videoUrl)))],
-			audio_channels = 2,
-			container = Container.MP4
 		)
 	]
 	
@@ -151,37 +150,9 @@ def BuildReplayObject(game, data):
 	videoUrl = videoUrl.replace("{awayHome}", awayHome).replace("{fullShort}", fullShort).replace("{q}", quality)
 	
 	Log.Debug("Replay Url: " + videoUrl) 
+	
 	return [
 		 MediaObject(
 			parts = [PartObject(key = Callback(PlayHLS, url = videoUrl))]
 		)
 	] 
-	
-	# download the playlist and split it into parts	
-	#playlist = HTTP.Request(videoUrl, follow_redirects=False).content
-	#index = string.rfind(videoUrl, "/")
-	#playlist_base = videoUrl[0:index+1]
-	#Log.Debug("base: " + playlist_base)
-	
-	#parts = []
-	
-	#for line in playlist.splitlines()[1:-2]:
-	#	if line.startswith('#') == False:
-	#		line = playlist_base + line
-	#		Log.Debug("line: " + line)
-	#		parts.append(PartObject(key = line, duration = 10000))
-	
-	#return [
-	#	 MediaObject(
-	#		optimized_for_streaming=True,
-	#		parts = parts,
-	#		audio_channels = 2
-	#	)
-	#]
-	
-
-def PlayVideo(url):
-	return Redirect(url)
-	
-def PlayVideo2(url):
-	return IndirectResponse(VideoClipObject, key = url)

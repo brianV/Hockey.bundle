@@ -66,7 +66,7 @@ def ArchiveMenu():
 def GameMenu(gameId, title):
 	dir = ObjectContainer(title2 = title, art=R(core.ART))
 	
-	core.BuildGameMenu(dir, gameId, StreamMenu, HighlightsMenu, SelectQualityMenu)
+	core.BuildGameMenu(dir, gameId, HighlightsMenu, SelectQualityMenu)
 	
 	return dir
 	
@@ -75,22 +75,15 @@ def HighlightsMenu(gameId, title):
 	
 	return dir
 	
-def SelectQualityMenu(url, title, logo):
+def SelectQualityMenu(url, title, logo, available):
 	dir = ObjectContainer(title2 = title, art=R(core.ART))
 	
-	core.BuildQualitySelectionMenu(dir, url, logo)
-	
-	return dir
-		 
-def StreamMenu(gameId, title):
-	dir = ObjectContainer(title2 = title, art=R(core.ART))
-	
-	try:
-		core.BuildStreamMenu(dir, gameId)	
-	#except core.NotAvailableException as ex:
-	except core.NotAvailableException, ex:
-		message = str(L("ErrorStreamsNotReady")).replace("{minutes}", str(ex.Minutes))
+	if available == False:
+		#show error message instead
+		message = str(L("ErrorStreamsNotReady"))
 		return ObjectContainer(header=L("MainMenuTitle"), message=message)	
+	else:
+		core.BuildQualitySelectionMenu(dir, url, logo)
 	
 	return dir
 	

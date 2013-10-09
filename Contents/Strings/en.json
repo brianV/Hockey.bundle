@@ -2,7 +2,7 @@
 	"MainMenuTitle": "Hockey",
 	"ErrorNoGames": "No games could be found.",
 	"ErrorNoStreams": "No streams could be found for this game.",
-	"ErrorStreamsNotReady": "Stream available {minutes} minutes before game time.",
+	"ErrorStreamsNotReady": "Stream will be available 20 minutes before gametime.",
 	"HomeStreamLabelFormat": "Home Stream ({name})",
 	"AwayStreamLabelFormat": "Away Stream ({name})",
 	"MatchupFormat": "{away} at {home} - {time}",
