@@ -10,8 +10,6 @@ ART = 'art-default.png'
 ICON = 'icon-default.png'
 DEFAULT_TEAM_ICON = "Team_DEFAULT.jpg"
 
-LIVE_STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
-QUALITY_MARKER = "{q}" 
 SCHEDULE_URL = "https://raw.github.com/pudds/JsonData/master/h/{year}-{month}-{day}.json"
 GAME_URL = "https://raw.github.com/pudds/JsonData/master/h/g/{gameid}.json"
 
@@ -168,43 +166,52 @@ def BuildScheduleMenu(container, date, gameCallback, mainMenuCallback):
 		))
 
 		
-def BuildGameMenu(container, gameId, streamCallback, highlightsCallback):
+def BuildGameMenu(container, gameId, streamCallback, highlightsCallback, selectQualityCallback):
 		
 	url = GAME_URL.replace("{gameid}", gameId)
 	Log.Debug("Loading game from url: " + url)
-	game = JSON.ObjectFromURL(url)
+	game = JSON.ObjectFromURL(url) 
 		
 	# if there is a live away stream, add that
 	if game["a"]["live"] != "":
-		container.add(GetClipObject(url, "live", game["a"]["ab"], L("AwayStreamLabelFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "liveAway", game["a"]["ab"], L("AwayStreamLabelFormat")))
 
 	if game["h"]["live"] != "":
-		container.add(GetClipObject(url, "live", game["h"]["ab"], L("HomeStreamLabelFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "liveHome", game["h"]["ab"], L("HomeStreamLabelFormat")))
 		
 	# replays
 	if game["a"]["replayShort"] != "":
-		container.add(GetClipObject(url, "replayShortAway", game["a"]["ab"], L("AwayReplayCondensedFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "replayShortAway", game["a"]["ab"], L("AwayReplayCondensedFormat")))
 	if game["a"]["replayFull"] != "":
-		container.add(GetClipObject(url, "replayFullAway", game["a"]["ab"], L("AwayReplayFullFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "replayFullAway", game["a"]["ab"], L("AwayReplayFullFormat")))
 	
 	if game["h"]["replayShort"] != "":
-		container.add(GetClipObject(url, "replayShortHome", game["h"]["ab"], L("HomeReplayCondensedFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "replayShortHome", game["h"]["ab"], L("HomeReplayCondensedFormat")))
 	if game["h"]["replayFull"] != "":
-		container.add(GetClipObject(url, "replayFullHome", game["h"]["ab"], L("HomeReplayFullFormat")))
+		container.add(GetStreamDirectory(selectQualityCallback, url, "replayFullHome", game["h"]["ab"], L("HomeReplayFullFormat")))
 		
 	if len(game["pbp"]) > 0:
 		container.add(GetDirectoryItem(L("HighlightsLabel"), Callback(highlightsCallback, gameId = gameId, title = L("HighlightsLabel"))))
+	
+
+def BuildQualitySelectionMenu(container, url, logo):
+	
+	container.add(VideoClipObject(url = url + "4500", title = "4500", thumb = R(logo)))
+	container.add(VideoClipObject(url = url + "3000", title = "3000", thumb = R(logo)))
 
 
-def GetClipObject(gameUrl, type, teamAb, titleFormat):
+def GetStreamDirectory(selectQualityCallback, gameUrl, type, teamAb, titleFormat):
 	#STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
 	team = GetTeamConfig(teamAb)
 	Log.Debug("Add clip for " + team["City"])
 	
+	url = gameUrl + "?type=" + type + "&name=" + team["LiveName"] + "&logo=" + team["Logo"] + "&q=" #appended in next menu
+	title = str(titleFormat).replace("{name}", team["Name"])
+	
 	# tie to video prefix..
-	return VideoClipObject( 
-		url = gameUrl + "?type=" + type + "&name=" + team["LiveName"], #needs stream name
-		title = str(titleFormat).replace("{name}", team["Name"]),
+	return DirectoryObject(
+		key = Callback(selectQualityCallback, url = url, title = title, logo = team["Logo"]),
+		title = title,
 		thumb = R(team["Logo"])
 	)
 	

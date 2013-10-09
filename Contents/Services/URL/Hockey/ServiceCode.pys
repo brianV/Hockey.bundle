@@ -1,38 +1,63 @@
 import string
-#import urlparse
-#import teams
 
+LIVE_STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
+#http://nlds150.cdnak.neulion.com/nlds_vod/nhl/vod/2013/10/06/33/2_33_ana_wpg_1314_a_whole_1_4500_ipad.mp4.m3u8
+REPLAY_STREAM_FORMAT = "http://nlds150.cdnak.neulion.com/nlds_vod/nhl/vod/{year}/{month}/{day}/{gameNumber}/{type}_{gameNumber}_{away}_{home}_1314_{awayHome}_{fullShort}_{q}_ipad.mp4.m3u8"
+QUALITY_MARKER = "{q}" 
 
 ####################################################################################################
 def MetadataObjectForURL(url):
-	
-	#parts = urlparse.urlparse(url)	
-	#query = urlparse.parse_qs(parts.query)
-	
-	#title = query["t"][0]	
-	#logo = query["l"][0]
-	#desc = query["d"][0]
-	
+		
 	Log.Info("Generate Hockey metadata for " + url)
 	
-	title = "Game Stream"
-	desc = ""
-	logo = R("TEAM_Default.jpg")
+	# parse the query string into a dictionary.
+	# don't use the urlparse library, it breaks some deployments
+	# https://raw.github.com/pudds/JsonData/master/h/g/2013020037.json?type=replayFullHome&name=mapleleafs
+	data = ParseQueryString(url)
+	#Log.Debug("data: " + str(data))
+	title = ""
+	
+	if data["type"] == "liveAway" or data["type"] == "liveHome":
+		title = "Live"
+	elif data["type"] == "replayFullAway" or data["type"] == "replayFullHome":
+		title = "Full Replay"
+	elif data["type"] == "replayShortAway" or data["type"] == "replayShortHome":
+		title = "Condensed Replay"
+	
+	game = GetGameJson(url)
+	
+	desc = game["summary"]
+	logo = R(data["logo"])
 
     # Construct a metadata item
 	return VideoClipObject(
 		title = title,
-		thumb=R(logo),
+		thumb=logo,
 		summary = desc
 	)
 
 ####################################################################################################
 def MediaObjectsForURL(url):
 
+	game = GetGameJson(url)
+	data = ParseQueryString(url)
+	
+	type = data["type"]
+	
+	videoUrl = ""
+	if type == "replayFullHome" or type == "replayFullAway" or type == "replayShortHome" or type == "replayShortAway":
+		videoUrl = BuildReplayUrl(game, data)
+	
+	if type == "liveHome" or type == "liveAway":
+		videoUrl = ""
+		
+	if videoUrl == "":
+		raise Exception
+
 	return [
 		 MediaObject(
 			optimized_for_streaming=True,
-			parts = [PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, url=url)))],
+			parts = [PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, url=videoUrl)))],
 			audio_channels = 2,
 			container = Container.MP4
 		)
@@ -59,6 +84,8 @@ def GeneratePlaylist(playlist, playlist_base):
 	Log.Debug("base: " + playlist_base)
 
 	new_playlist = '#EXTM3U'
+	
+
 	for line in playlist.splitlines()[1:-2]:
 		if line.startswith('#'):
 			# take it as is
@@ -67,7 +94,59 @@ def GeneratePlaylist(playlist, playlist_base):
 		else:
 			line = playlist_base + line
 			Log.Debug("line: " + line)
-			new_playlist = new_playlist + "\n" + line			
+			new_playlist = new_playlist + "\n" + line
+			#debugging: 
+			#new_playlist = new_playlist + "\n" + "#EXT-X-ENDLIST"
+			#break # return only one ts
 
 	return new_playlist
 	
+def GetGameJson(url):	
+	return JSON.ObjectFromURL(url)
+	
+def ParseQueryString(url):	
+	queryStart = url.find("?") + 1
+	query = url[queryStart:len(url)]
+	Log.Debug("Query string: " + query)
+	parts = query.split("&")	
+	data = {}
+	
+	for part in parts:
+		kvp = part.split("=")
+		key = kvp[0]
+		value = kvp[1]
+		data[key] = value
+
+	return data
+
+def BuildReplayUrl(game, data):
+
+
+	year = game["easternStart"][0:4]
+	month = game["easternStart"][5:7]
+	day = game["easternStart"][8:10]
+	gameType = game["t"].lstrip("0") # not zero padded
+	gameNumber = game["gn"].lstrip("0") # not zero padded
+	quality = data["q"]
+	type = data["type"]
+	
+	if type == "replayFullHome":
+		awayHome = "h"
+		fullShort = "whole_1"
+	elif type == "replayFullAway":
+		awayHome = "a"
+		fullShort = "whole_1"
+	elif type == "replayShortHome":
+		awayHome = "h"
+		fullShort = "condensed_2"
+	elif type == "replayShortAway":
+		awayHome = "a"
+		fullShort = "condensed_2"
+		
+	videoUrl = REPLAY_STREAM_FORMAT.replace("{year}", year).replace("{month}", month).replace("{day}", day)
+	videoUrl = videoUrl.replace("{type}", gameType).replace("{gameNumber}", gameNumber).replace("{away}", game["a"]["ab"]).replace("{home}", game["h"]["ab"])
+	videoUrl = videoUrl.replace("{awayHome}", awayHome).replace("{fullShort}", fullShort).replace("{q}", quality)
+	
+	Log.Debug("Replay Url: " + videoUrl) 
+	
+	return videoUrl

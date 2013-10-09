@@ -20,9 +20,7 @@ def Start():
 	# Initialize the plugin
 	Plugin.AddPrefixHandler(core.VIDEO_PREFIX, MainMenu, core.NAME, core.ICON, core.ART)
 	Plugin.AddViewGroup("List", viewMode = "InfoList", mediaType = "items")
-	
-	HTTP.SetHeader('User-agent', 'iPhone')
-	
+		
 	ObjectContainer.title1 = core.NAME
 	
 	#core.Init(NAME, SPORT_KEYWORD, STREAM_FORMAT, TEAMS, DEFAULT_TEAM_ICON)
@@ -68,7 +66,7 @@ def ArchiveMenu():
 def GameMenu(gameId, title):
 	dir = ObjectContainer(title2 = title, art=R(core.ART))
 	
-	core.BuildGameMenu(dir, gameId, StreamMenu, HighlightsMenu)
+	core.BuildGameMenu(dir, gameId, StreamMenu, HighlightsMenu, SelectQualityMenu)
 	
 	return dir
 	
@@ -77,6 +75,12 @@ def HighlightsMenu(gameId, title):
 	
 	return dir
 	
+def SelectQualityMenu(url, title, logo):
+	dir = ObjectContainer(title2 = title, art=R(core.ART))
+	
+	core.BuildQualitySelectionMenu(dir, url, logo)
+	
+	return dir
 		 
 def StreamMenu(gameId, title):
 	dir = ObjectContainer(title2 = title, art=R(core.ART))
