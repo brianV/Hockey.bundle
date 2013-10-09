@@ -88,18 +88,17 @@ def PlayHLS(url):
 	playlist_base = url[0:index+1]
 	Log.Debug("base: " + playlist_base)
 
-	new_playlist = '#EXTM3U'
-	
+	new_playlist = ""
 
-	for line in playlist.splitlines()[1:-2]:
+	for line in playlist.splitlines():
 		if line.startswith('#'):
 			# take it as is
 			Log.Debug("line: " + line)
-			new_playlist = new_playlist + "\n" + line
+			new_playlist = new_playlist + line + "\n"
 		else:
 			line = playlist_base + line
 			Log.Debug("line: " + line)
-			new_playlist = new_playlist + "\n" + line
+			new_playlist = new_playlist + line + "\n"
 			#debugging: 
 			#new_playlist = new_playlist + "\n" + "#EXT-X-ENDLIST"
 			#break # return only one ts
@@ -154,9 +153,9 @@ def BuildReplayObject(game, data):
 	Log.Debug("Replay Url: " + videoUrl) 
 	return [
 		 MediaObject(
-			parts = [PartObject(key = HTTPLiveStreamURL(Callback(PlayVideo, url = videoUrl)))]
+			parts = [PartObject(key = Callback(PlayHLS, url = videoUrl))]
 		)
-	]
+	] 
 	
 	# download the playlist and split it into parts	
 	#playlist = HTTP.Request(videoUrl, follow_redirects=False).content
@@ -183,3 +182,6 @@ def BuildReplayObject(game, data):
 
 def PlayVideo(url):
 	return Redirect(url)
+	
+def PlayVideo2(url):
+	return IndirectResponse(VideoClipObject, key = url)
