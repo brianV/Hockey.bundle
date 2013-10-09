@@ -10,11 +10,13 @@
 				<array>
 					<string>http://nlds124.cdnak.neulion.com/nlds/nhl/rangers/as/live/rangers_hd_3000.m3u8</string>
 					<string>http://nlds143.cdnak.neulion.com/nlds/nhl/bruins/as/live/bruins_hd_3000.m3u8</string>
+					<string>https://raw.github.com/pudds/JsonData/master/h/g/1235.json</string>
 				</array>
 				<key>URLPatterns</key>
 				<array>
 					<string>^http://nlds.+.cdnak.neulion.com/nlds/nhl/.+</string>
 					<string>^http://boulder.zxq.net.+</string>
+					<string>^https://raw.github.com/pudds/JsonData/master/h/g/.+.json</string>
 				</array>
 			</dict>
 		</dict>

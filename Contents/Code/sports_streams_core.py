@@ -3,12 +3,17 @@ from dateutil import parser
 from dateutil import tz
 
 ###############################################
+VIDEO_PREFIX = "/video/hockey"
+NAME = "Hockey"
 
-# NOTHING SPORT SPECIFIC SHOULD GO IN HERE.  
-# THE CODE SHOULD BE REUSABLE REGARDLESS OF THE SPORT.
+ART = 'art-default.png'
+ICON = 'icon-default.png'
+DEFAULT_TEAM_ICON = "Team_DEFAULT.jpg"
 
-SEARCH_URL = "http://www.reddit.com/r/Sports_Streams/search.rss?q={sport}&sort=new&t=week&restrict_sr=on"
+LIVE_STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
 QUALITY_MARKER = "{q}" 
+SCHEDULE_URL = "https://raw.github.com/pudds/JsonData/master/h/{year}-{month}-{day}.json"
+GAME_URL = "https://raw.github.com/pudds/JsonData/master/h/g/{gameid}.json"
 
 STREAM_AVAILABLE_MINUTES_BEFORE = 20
 STREAM_HIDDEN_AFTER = 360 # 6 hours oughta be plenty...
@@ -19,16 +24,41 @@ HERE = tz.tzlocal()
 UTC = tz.tzutc()
 EASTERN = tz.gettz("EST5EDT")
 
-CONFIG = None
 
-###############################################
+TEAMS = {
+	"ANA": { "City": "Anaheim", "Name": "Ducks", "Logo": "Team_ANA.jpg", "LiveName":"ducks" },
+	"BOS": { "City": "Boston", "Name": "Bruins", "Logo": "Team_BOS.jpg", "LiveName":"bruins" },
+	"BUF": { "City": "Buffalo", "Name": "Sabres", "Logo": "Team_BUF.jpg", "LiveName":"sabres" },
+	"CAR": { "City": "Carolina", "Name": "Hurricanes", "Logo": "Team_CAR.jpg", "LiveName":"hurricanes" },
+	"CBJ": { "City": "Columbus", "Name": "Blue Jackets", "Logo": "Team_CBS.jpg", "LiveName":"bluejackets" },
+	"CGY": { "City": "Calgary", "Name": "Flames", "Logo": "Team_CGY.jpg", "LiveName":"flames" },
+	"CHI": { "City": "Chicago", "Name": "Blackhawks", "Logo": "Team_CHI.jpg", "LiveName":"blackhawks" },
+	"COL": { "City": "Colorado", "Name": "Avalanche", "Logo": "Team_COL.jpg", "LiveName":"avalanche" },
+	"DAL": { "City": "Dallas", "Name": "Stars", "Logo": "Team_DAL.jpg", "LiveName":"stars" },
+	"DET": { "City": "Detroit", "Name": "Red Wings", "Logo": "Team_DET.jpg", "LiveName":"redwings" },
+	"EDM": { "City": "Edmonton", "Name": "Oilers", "Logo": "Team_EDM.jpg", "LiveName":"oilers" },
+	"FLA": { "City": "Florida", "Name": "Panthers", "Logo": "Team_FLA.jpg", "LiveName":"panthers" },
+	"LAK": { "City": "Los Angeles", "Name": "Kings", "Logo": "Team_LOS.jpg", "LiveName":"kings" },
+	"MIN": { "City": "Minnesota", "Name": "Wild", "Logo": "Team_MIN.jpg", "LiveName":"wild" },
+	"MTL": { "City": "Montreal", "Name": "Canadiens", "Logo": "Team_MON.jpg", "LiveName":"canadiens" },
+	"NJD": { "City": "New Jersey", "Name": "Devils", "Logo": "Team_NJD.jpg", "LiveName":"devils" },
+	"NSH": { "City": "Nashville", "Name": "Predators", "Logo": "Team_NSH.jpg", "LiveName":"predators" },
+	"NYI": { "City": "NY", "Name": "Islanders", "Logo": "Team_NYI.jpg", "LiveName":"islanders" },
+	"NYR": { "City": "NY", "Name": "Rangers", "Logo": "Team_NYR.jpg", "LiveName":"rangers" },
+	"OTT": { "City": "Ottawa", "Name": "Senators", "Logo": "Team_OTT.jpg", "LiveName":"senators" },
+	"PHI": { "City": "Philadelphia", "Name": "Flyers", "Logo": "Team_PHI.jpg", "LiveName":"flyers" },
+	"PHX": { "City": "Phoenix", "Name": "Coyotes", "Logo": "Team_PHX.jpg", "LiveName":"coyotes" },
+	"PIT": { "City": "Pittsburgh", "Name": "Penguins", "Logo": "Team_PIT.jpg", "LiveName":"penguins" },
+	"SJS": { "City": "San Jose", "Name": "Sharks", "Logo": "Team_SAN.jpg", "LiveName":"sharks" },
+	"STL": { "City": "St. Louis", "Name": "Blues", "Logo": "Team_STL.jpg", "LiveName":"blues" },
+	"TBL": { "City": "Tampa Bay", "Name": "Lightning", "Logo": "Team_TAM.jpg", "LiveName":"lightning" },
+	"TOR": { "City": "Toronto", "Name": "Maple Leafs", "Logo": "Team_TOR.jpg", "LiveName":"mapleleafs" },
+	"VAN": { "City": "Vancouver", "Name": "Canucks", "Logo": "Team_VAN.jpg", "LiveName":"canucks" },
+	"WPG": { "City": "Winnipeg", "Name": "Jets", "Logo": "Team_WPG.jpg", "LiveName":"jets" },
+	"WSH": { "City": "Washington", "Name": "Capitals", "Logo": "Team_WSH.jpg", "LiveName":"capitals" }
+}
 
-# This method should be called first by sport plugins.
-def Init(title, sportKeyword, streamFormat, teamNames, defaultTeamIcon):
-	Log.Debug("Core.Init()")
-	global CONFIG
-	CONFIG = Config(title, sportKeyword, streamFormat, teamNames, defaultTeamIcon)
-	
+###############################################	
 
 class NotAvailableException(Exception):
 	pass
@@ -37,25 +67,34 @@ class NotAvailableException(Exception):
 	
 class NoGamesException(Exception):
 	pass
-
 	
-class Config:
-	def __init__(self, title, sportKeyword, streamFormat, teams, defaultTeamIcon):
-		self.Title = title
-		self.SportKeyword = sportKeyword
-		self.StreamFormat = streamFormat
-		self.Teams = teams
-		self.DefaultTeamIcon = defaultTeamIcon
-		
 
 class Game:
-	def __init__(self, id, utcStart, awayAbbreviation, homeAbbreviation, summary):
-		self.ID = id
+	def __init__(self, id, seasonId, type, gameNumber, utcStart, summary, home, away): # pbp
+		self.Id = id
+		self.SeasonId = seasonId
+		self.Type = type
+		self.GameNumber = gameNumber
 		self.UtcStart = utcStart
-		self.AwayAbbreviation = awayAbbreviation
-		self.HomeAbbreviation = homeAbbreviation
 		self.Summary = summary
+		self.Home = home
+		self.Away = away
 				
+class Team:
+	def __init__(self, ab, record, live, replayShort, replayFull):
+		self.AB = ab
+		self.Record = record
+		self.Live = live
+		self.ReplayShort = replayShort
+		self.ReplayFull = replayFull
+		
+class GameSummary:
+	def __init__(self, id, utcStart, summary, home, away): # pbp
+		self.Id = id
+		self.UtcStart = utcStart
+		self.Summary = summary
+		self.Home = home
+		self.Away = away
 		
 class Stream:
 	def __init__(self, title, url, team, available, summary):
@@ -77,38 +116,39 @@ def BuildMainMenu(container, scheduleCallback, archiveCallback):
 	# make sure these times, which are used to make calls to the nhl servers, are always in eastern time.
 	todayDate = GetEasternNow()
 	tomorrowDate = todayDate + datetime.timedelta(days = 1)
+	yesterdayDate = todayDate - datetime.timedelta(days = 1)
 	
 	today = datetime.datetime.strftime(todayDate, DATE_FORMAT)
 	tomorrow = datetime.datetime.strftime(tomorrowDate, DATE_FORMAT)
+	yesterday = datetime.datetime.strftime(yesterdayDate, DATE_FORMAT)
 	
-	container.add(GetMainMenuItem(L("TodayLabel"), Callback(scheduleCallback, date = today, title = L("TodayLabel"))))
-	container.add(GetMainMenuItem(L("TomorrowLabel"), Callback(scheduleCallback, date = tomorrow, title = L("TomorrowLabel"))))
+	#temp
+	container.add(GetDirectoryItem("Yesterday", Callback(scheduleCallback, date = yesterday, title = "Yesterday")))
+	container.add(GetDirectoryItem(L("TodayLabel"), Callback(scheduleCallback, date = today, title = L("TodayLabel"))))
+	container.add(GetDirectoryItem(L("TomorrowLabel"), Callback(scheduleCallback, date = tomorrow, title = L("TomorrowLabel"))))
 	
 	dateFormat = str(L("ScheduleDateFormat")) # strftime can't take a localstring for some reason.	
 	for x in range(1, MAIN_MENU_EXTRA_DAYS + 1):
 		date = tomorrowDate + datetime.timedelta(days = x)
-		dateString = datetime.datetime.strftime(date, dateFormat)
-		title = dateString
-		container.add(GetMainMenuItem(title, Callback(scheduleCallback, date = dateString, title = title)))
+		dateString = datetime.datetime.strftime(date, DATE_FORMAT)
+		Log.Debug("Main menu date string: " + dateString)
+		title = datetime.datetime.strftime(date, dateFormat)
+		container.add(GetDirectoryItem(title, Callback(scheduleCallback, date = dateString, title = title)))
 		
 	#archive
-	container.add(GetMainMenuItem(L("ArchiveLabel"), Callback(archiveCallback)))
-			
-	if NeedsPreferencesItem():
-		Log.Debug("Adding preferences menu item")
-		container.add(PrefsObject(title="Preferences", summary="Change the stream bitrate.", thumb=R("icon-prefs.png")))
+	container.add(GetDirectoryItem(L("ArchiveLabel"), Callback(archiveCallback)))
 	
 	
-def GetMainMenuItem(title, callbackKey):
+def GetDirectoryItem(title, callbackKey):
 	return DirectoryObject(
 		key = callbackKey,
 		title = title,
-		thumb = R(CONFIG.DefaultTeamIcon)
+		thumb = R(DEFAULT_TEAM_ICON)
 	)
 	
 def BuildScheduleMenu(container, date, gameCallback, mainMenuCallback):
 	# get games
-	games = GetGamesForDay(date)
+	games = GetGameSummariesForDay(date)
 	
 	if len(games) == 0:
 		# no games
@@ -116,37 +156,59 @@ def BuildScheduleMenu(container, date, gameCallback, mainMenuCallback):
 		
 	matchupFormat = GetStreamFormatString("MatchupFormat")
 	summaryFormat = GetStreamFormatString("SummaryFormat")
-		 
+
 	for game in games:
-		title = GetStreamFormat(matchupFormat, game.AwayAbbreviation, game.HomeAbbreviation, game.UtcStart, game.Summary)
-		summary = GetStreamFormat(summaryFormat, game.AwayAbbreviation, game.HomeAbbreviation, game.UtcStart, game.Summary)
+		title = GetStreamFormat(matchupFormat, game.Away, game.Home, game.UtcStart, game.Summary) 
+		summary = GetStreamFormat(summaryFormat, game.Away, game.Home, game.UtcStart, game.Summary)
 		container.add(DirectoryObject(
-			key = Callback(gameCallback, gameId = game.ID, title = title),
+			key = Callback(gameCallback, gameId = game.Id, title = title),
 			title = title,
 			summary = summary,
-			thumb = R(CONFIG.DefaultTeamIcon)
+			thumb = R(DEFAULT_TEAM_ICON) 
 		))
 
 		
-def BuildGameMenu(container, date, streamCallback):
-	# get streams for game		
-	streams, available = GetGameStreams(gameId, CONFIG.StreamFormat)
+def BuildGameMenu(container, gameId, streamCallback, highlightsCallback):
+		
+	url = GAME_URL.replace("{gameid}", gameId)
+	Log.Debug("Loading game from url: " + url)
+	game = JSON.ObjectFromURL(url)
+		
+	# if there is a live away stream, add that
+	if game["a"]["live"] != "":
+		container.add(GetClipObject(url, "live", game["a"]["ab"], L("AwayStreamLabelFormat")))
+
+	if game["h"]["live"] != "":
+		container.add(GetClipObject(url, "live", game["h"]["ab"], L("HomeStreamLabelFormat")))
+		
+	# replays
+	if game["a"]["replayShort"] != "":
+		container.add(GetClipObject(url, "replayShortAway", game["a"]["ab"], L("AwayReplayCondensedFormat")))
+	if game["a"]["replayFull"] != "":
+		container.add(GetClipObject(url, "replayFullAway", game["a"]["ab"], L("AwayReplayFullFormat")))
 	
-	quality = Prefs["videoQuality"]
+	if game["h"]["replayShort"] != "":
+		container.add(GetClipObject(url, "replayShortHome", game["h"]["ab"], L("HomeReplayCondensedFormat")))
+	if game["h"]["replayFull"] != "":
+		container.add(GetClipObject(url, "replayFullHome", game["h"]["ab"], L("HomeReplayFullFormat")))
+		
+	if len(game["pbp"]) > 0:
+		container.add(GetDirectoryItem(L("HighlightsLabel"), Callback(highlightsCallback, gameId = gameId, title = L("HighlightsLabel"))))
+
+
+def GetClipObject(gameUrl, type, teamAb, titleFormat):
+	#STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
+	team = GetTeamConfig(teamAb)
+	Log.Debug("Add clip for " + team["City"])
 	
-	if not available:
-		raise NotAvailableException
+	# tie to video prefix..
+	return VideoClipObject( 
+		url = gameUrl + "?type=" + type + "&name=" + team["LiveName"], #needs stream name
+		title = str(titleFormat).replace("{name}", team["Name"]),
+		thumb = R(team["Logo"])
+	)
 	
-	for stream in streams:
-		stream.Url = stream.Url.replace(QUALITY_MARKER, quality)
-		team = GetTeamConfig(stream.Team)
-		Log.Debug("Logo: " + team["Logo"])
-		container.add(VideoClipObject(
-			url = stream.Url,
-			title = str(stream.Title).replace("{city}", team["Name"]),
-			thumb = R(team["Logo"])
-		))
-	
+
 	
 def GetEasternNow():
 	#utcNow = datetime.strptime(str(datetime.utcnow()), "%Y-%m-%d %H:%M:%S")
@@ -159,41 +221,51 @@ def GetEasternNow():
 	
 	return easternNow
 	
-def GetGamesForDay(date):
+def GetGameSummariesForDay(date):
 	
 	Log.Info("Get games for " + date)
+	
 	split = date.split("-")
 	year = split[0]
 	month = split[1]
 	day = split[2]
 	
-	#http://nhlwc.cdnak.neulion.com/fs1/nhl/league/schedule/2013/10/06/iphone/schedule.json
 	url = SCHEDULE_URL.replace("{year}", year).replace("{month}", month).replace("{day}", day)
-	
 	Log.Info("Schedule URL: " + url)
-	
-	schedule = JSON.ObjectFromURL(url)	
-	Log.Info("Found " + str(len(schedule["games"])) + " games")
 	
 	games = []
 	
-	for game in schedule["games"]:
-		gameId = game["gameId"]
-		# status = "" when unstarted, "FINAL" when complete, probably something else when in progress.
-		easternStart = datetime.datetime.strptime(date + " " + game["startTime"], "%Y-%m-%d %H:%M:%S")
-		easternStart = easternStart.replace(tzinfo = EASTERN)
-		utcStart = easternStart.astimezone(UTC)
-		awayAbbr = game["a"]["ab"]
-		homeAbbr = game["h"]["ab"] 
-		summary = game["gamePreview"] # gameRecap when completed
-		#self.UtcStart = utcStart
-		#self.HomeCity = homeCity
-		#self.AwayCity = awayCity
-		#self.Summary = summary
-		Log.Debug(awayAbbr + " at " + homeAbbr + " at " + str(easternStart) + "(eastern)/" + str(utcStart) + "(utc)")
-		games.append(Game(gameId, utcStart, awayAbbr, homeAbbr, summary)) 
+	try:
+		schedule = JSON.ObjectFromURL(url)	
+	except:
+		Log.Error("Unable to open schedule url")
+		# couldn't load url, return no games
+		return games
+	
+	Log.Info("Found " + str(len(schedule)) + " games")	
+		
+	for item in schedule["games"]:		
+		gameId = item["id"]
+		utcStart = parser.parse(item["utcStart"])
+		summary = item["summary"]
+		home = item["h"]
+		away = item["a"]
+				
+		Log.Debug(away + " at " + home + " at " + str(utcStart) + "(utc)")		
+		
+		game = GameSummary(gameId, utcStart, summary, home, away)		
+		games.append(game) 
 		
 	return games
+
+def GetTeamFromJson(json):
+	ab = json["ab"]
+	record = json["record"]
+	live = json["live"]
+	replayShort = json["replayShort"]
+	replayFull = json["replayFull"]
+	
+	return Team(ab, record, live, replayShort, replayFull)
 
 	
 def GetStreamFormatString(key):
@@ -220,12 +292,12 @@ def GetStreamFormat(format, awayTeam, homeTeam, utcStart, summary):
 	return str(format).replace("{away}", away).replace("{home}", home).replace("{time}", localStart).replace("{summary}", summary)
 	
 def GetTeamConfig(team):
-	if team in CONFIG.Teams:
-		return CONFIG.Teams[team]
+	if team in TEAMS:
+		return TEAMS[team]
 	else:
 		# create a new team so it's null safe 
 		Log.Info("Could not find team configuration for '" + team + "'")
-		return { "City": team, "Name": team, "Logo": CONFIG.DefaultTeamIcon }
+		return { "City": team, "Name": team, "Logo": DEFAULT_TEAM_ICON}
 		
 def FormatTeamName(team):
 	teamConfig = GetTeamConfig(team)
@@ -244,93 +316,6 @@ def NeedsPreferencesItem():
 	else:
 		return True
 
-def GetGameList():
-
-	#Log.Debug("GetGameList()")
-	
-	# thedate = datetime.datetime.now()
-	# year = thedate.strftime("%Y")
-	# month = thedate.strftime("%m")
-	# day = thedate.strftime("%d")
-	#stupid osx doesn't have .format available....	
-	Log.Debug("Searching for: " + CONFIG.SportKeyword)
-	url = SEARCH_URL.replace("{sport}", CONFIG.SportKeyword)
-	
-	#Log.Debug(url)
-	
-	#try:
-	threadList = XML.ElementFromURL(url, cacheTime=None)
-	#except:
-		# reddit down likely
-	#	return itemList
-	
-	items = threadList.xpath("//item")
-	
-	if len(items) == 0:
-		# no threads in past week
-		return []
-		
-	# we're only concerned with the most recent game
-	item = items[0]
-	threadUrl = item.xpath("./link/text()")[0]
-	
-	#Log.Debug("Opening thread: " + threadUrl)
-	
-	thread = XML.ElementFromURL(threadUrl + ".rss")
-	selfPost = thread.xpath("//item")[0]
-	Log.Debug("selfPost: " + selfPost.xpath("./description/text()")[0])
-	description = HTML.ElementFromString(selfPost.xpath("./description/text()")[0])
-	
-	gamesXml = XML.ElementFromString(description.xpath("//p/text()")[0])
-	#cache xml
-	#This gets cached so we don't need to reload the XML when we open the game menu
-	#We reload it each time we open the main menu, to avoid an out of date game list
-	#Should probably read from the cache for a certain time period as well, since the games only change once per day.
-	Data.Save("games", XML.StringFromElement(gamesXml))
-	
-	return GamesXmlToList(gamesXml)
-	
-def GamesXmlToList(xml):	
-	list = []
-		  
-	#I should cache this data for the next calls...
-	for game in xml.xpath("//game"): 
-		gameId = GetSingleXmlValue(game, "./@id") 
-		summary = GetSingleXmlValue(game, "./summary/text()")
-		utcStartString = GetSingleXmlValue(game, "./utcStart/text()") #2013-05-18 17:00:00+0000
-		#Log.Debug("utc string: " + utcStartString)
-		#utcStart = datetime.datetime.strptime(utcStartString, "%Y-%m-%d %H:%M:%S%z")
-		utcStart = parser.parse(utcStartString)
-		# set timezone
-		#utcStart = utcStart.replace(tzinfo=UTC)
-		#utcStart.tzinfo = UTC 
-		#Log.Debug("utc date: " + str(utcStart))
-		homeCity = GetSingleXmlValue(game, "./homeTeam/@city")
-		homeStreamName = GetSingleXmlValue(game, "./homeTeam/@streamName")
-		awayCity = GetSingleXmlValue(game, "./awayTeam/@city")
-		awayStreamName = GetSingleXmlValue(game, "./awayTeam/@streamName")
-		homeServer = GetSingleXmlValue(game, "./homeTeam/@server")
-		awayServer = GetSingleXmlValue(game, "./awayTeam/@server")
-		#Log.Debug("gameID: " + gameId)
-		
-		# only add if the start time is within a reasonable window
-		minutesToStart = GetMinutesToStart(utcStart)
-		if minutesToStart > STREAM_HIDDEN_AFTER * -1: # -1 in the past			
-			list.append(Game(gameId, utcStart, homeCity, awayCity, homeServer, awayServer, homeStreamName, awayStreamName, summary))
-	
-	return list
-	
-	
-def GetSingleXmlValue(element, xpath):
-	match = element.xpath(xpath)
-	
-	if len(match) > 0:
-		return match[0]
-	elif len(match) > 1:
-		raise Exception("found " + str(len(match)) + " elements where 1 was expected")
-	else:
-		return ""
-		
 
 def GetMinutesToStart(utcStart):
 	#Python's date handling is horrifically bad.

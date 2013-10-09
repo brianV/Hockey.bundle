@@ -3,8 +3,8 @@
 	"ErrorNoGames": "No games could be found.",
 	"ErrorNoStreams": "No streams could be found for this game.",
 	"ErrorStreamsNotReady": "Stream available {minutes} minutes before game time.",
-	"HomeStreamLabelFormat": "Home Stream ({city})",
-	"AwayStreamLabelFormat": "Away Stream ({city})",
+	"HomeStreamLabelFormat": "Home Stream ({name})",
+	"AwayStreamLabelFormat": "Away Stream ({name})",
 	"MatchupFormat": "{away} at {home} - {time}",
 	"MatchupFormatWindows": "{away} at {home}",
 	"MatchupFormatLinux": "{away} at {home}",
@@ -15,4 +15,9 @@
 	"TomorrowLabel": "Tomorrow",
 	"ArchiveLabel": "Archive",
 	"ScheduleDateFormat": "%b %d",
+	"HomeReplayCondensedFormat": "Condensed Replay ({name})",
+	"AwayReplayCondensedFormat": "Condensed Replay ({name})",
+	"HomeReplayFullFormat": "Full Replay ({name})",
+	"AwayReplayFullFormat": "Full Replay ({name})",
+	"HighlightsLabel": "Highlights"
 }
