@@ -10,8 +10,8 @@ ART = 'art-default.png'
 ICON = 'icon-default.png'
 DEFAULT_TEAM_ICON = "Team_DEFAULT.jpg"
 
-SCHEDULE_URL = "https://raw.github.com/pudds/JsonData/master/h/{year}-{month}-{day}.json"
-GAME_URL = "https://raw.github.com/pudds/JsonData/master/h/g/{gameid}.json"
+SCHEDULE_URL = "https://raw.github.com/SportsData/Data/master/h/{year}-{month}-{day}.json"
+GAME_URL = "https://raw.github.com/SportsData/Data/master/h/g/{gameid}.json"
 
 STREAM_AVAILABLE_MINUTES_BEFORE = 20
 STREAM_HIDDEN_AFTER = 360 # 6 hours oughta be plenty...

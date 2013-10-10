@@ -23,6 +23,7 @@ def Start():
 		
 	ObjectContainer.title1 = core.NAME
 	
+	
 	#core.Init(NAME, SPORT_KEYWORD, STREAM_FORMAT, TEAMS, DEFAULT_TEAM_ICON)
 	
 	Log.Debug("Plugin Start")

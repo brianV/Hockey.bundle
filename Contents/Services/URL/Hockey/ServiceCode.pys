@@ -37,6 +37,7 @@ def MetadataObjectForURL(url):
 	)
 
 ####################################################################################################
+@deferred # tells plex not to call this until the link is clicked
 def MediaObjectsForURL(url):
 
 	game = GetGameJson(url)
@@ -57,7 +58,6 @@ def MediaObjectsForURL(url):
 
 ####################################################################################################
 def BuildLiveStream(game, data):
-	LIVE_STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
 	
 	type = data["type"]
 	name = data["name"]
@@ -74,9 +74,14 @@ def BuildLiveStream(game, data):
 	return [
 		 MediaObject(
 			optimized_for_streaming=True,
-			parts = [PartObject(key=HTTPLiveStreamURL(Callback(PlayHLS, url=videoUrl)))],
+			parts = [PartObject(key=HTTPLiveStreamURL(Callback(PlayHLS2, url=videoUrl)))],
 		)
 	]
+	
+def PlayHLS2(url):
+	# this seems to work on the iOS clients, and it's way easier...
+	# if only we could set the user-agent on the redirect to player.
+	return Redirect(url)
 	
 def PlayHLS(url):
 	Log.Debug("service PlayVideo: " + url)
@@ -89,6 +94,7 @@ def PlayHLS(url):
 
 	new_playlist = ""
 
+	
 	for line in playlist.splitlines():
 		if line.startswith('#'):
 			# take it as is
@@ -98,9 +104,6 @@ def PlayHLS(url):
 			line = playlist_base + line
 			Log.Debug("line: " + line)
 			new_playlist = new_playlist + line + "\n"
-			#debugging: 
-			#new_playlist = new_playlist + "\n" + "#EXT-X-ENDLIST"
-			#break # return only one ts
 
 	return new_playlist
 	
