@@ -2,6 +2,7 @@ import string
 
 LIVE_STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
 REPLAY_STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds_vod/nhl/vod/{year}/{month}/{day}/{gameNumber}/{type}_{gameNumber}_{away}_{home}_1314_{awayHome}_{fullShort}_{replayNumber}_{q}_ipad.mp4.m3u8"
+HIGHLIGHT_FORMAT = "http://nhl.cdnllnwnl.neulion.net/u/nhlmobile/vod/nhl/{year}/{month}/{day}/{gameNumber}/{type}_{gameNumber}_{away}_{home}_1314_{awayHome}_discrete_{key}_{highlightType}_{highlightNumber}_{q}.mp4"
 QUALITY_MARKER = "{q}" 
 
 ####################################################################################################
@@ -16,17 +17,21 @@ def MetadataObjectForURL(url):
 	#Log.Debug("data: " + str(data))
 	title = ""
 	
+	game = GetGameJson(url)
+	
+	desc = game["summary"]
+	logo = R(data["logo"])
+	
 	if data["type"] == "liveAway" or data["type"] == "liveHome":
 		title = "Live"
 	elif data["type"] == "replayFullAway" or data["type"] == "replayFullHome":
 		title = "Full Replay"
 	elif data["type"] == "replayShortAway" or data["type"] == "replayShortHome":
 		title = "Condensed Replay"
+	elif data["type"] == "highlight":
+		title = "Highlight"
+		desc = data["summary"] # highlights pass summary on url
 	
-	game = GetGameJson(url)
-	
-	desc = game["summary"]
-	logo = R(data["logo"])
 
     # Construct a metadata item
 	return VideoClipObject(
@@ -51,6 +56,9 @@ def MediaObjectsForURL(url):
 	
 	if type == "liveHome" or type == "liveAway":
 		return BuildLiveStream(game, data)
+		
+	if type == "highlight":
+		return BuildHighlightObject(game, data)
 		
 	#shouldn't be here
 	raise Exception("Could not build video objects (invalid type)")
@@ -172,3 +180,54 @@ def BuildReplayObject(game, data):
 			parts = [PartObject(key = Callback(PlayHLS, url = videoUrl))]
 		)
 	] 
+
+	
+def BuildHighlightObject(game, data):
+	Log.Debug("Highlight")
+	
+	year = game["easternStart"][0:4]
+	month = game["easternStart"][5:7]
+	day = game["easternStart"][8:10]
+	gameType = game["t"].lstrip("0") # not zero padded
+	gameNumber = game["gn"].lstrip("0") # not zero padded
+	quality = data["q"]
+	type = data["type"]
+	key = data["key"]
+	
+	#find the highlight
+	for item in game["pbp"]:
+		if item["key"] == key:
+			pbp = item
+			break
+			
+	if pbp == None:
+		raise Exception("could not find pbp with key " + key)
+	
+	if data["home"] == "True":
+		highlightType = pbp["homeType"]
+		highlightNumber = pbp["homeNumber"]
+		awayHome = "h"
+	else:
+		highlightType = pbp["awayType"]
+		highlightNumber = pbp["awayNumber"]
+		awayHome = "a"
+		
+		
+	videoUrl = HIGHLIGHT_FORMAT.replace("{year}", year).replace("{month}", month).replace("{day}", day)
+	videoUrl = videoUrl.replace("{type}", gameType).replace("{gameNumber}", gameNumber).replace("{away}", game["a"]["ab"]).replace("{home}", game["h"]["ab"])
+	videoUrl = videoUrl.replace("{awayHome}", awayHome).replace("{q}", quality).replace("{key}", key)
+	videoUrl = videoUrl.replace("{highlightNumber}", str(highlightNumber)).replace("{highlightType}", highlightType)
+	
+	Log.Debug("Highlight Url: " + videoUrl) 
+		
+	return [
+		 MediaObject(
+			parts = [PartObject(key = Callback(PlayHighlight, url = videoUrl))]
+		)
+	] 
+
+	
+def PlayHighlight(url):
+	# this seems to work on the iOS clients, and it's way easier...
+	# if only we could set the user-agent on the redirect to player.
+	return Redirect(url)

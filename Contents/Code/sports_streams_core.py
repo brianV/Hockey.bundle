@@ -122,10 +122,10 @@ def BuildMainMenu(container, scheduleCallback, archiveCallback):
 	tomorrow = datetime.datetime.strftime(tomorrowDate, DATE_FORMAT)
 	yesterday = datetime.datetime.strftime(yesterdayDate, DATE_FORMAT)
 	
-	#temp
-	container.add(GetDirectoryItem("Yesterday", Callback(scheduleCallback, date = yesterday, title = "Yesterday")))
-	container.add(GetDirectoryItem(L("TodayLabel"), Callback(scheduleCallback, date = today, title = L("TodayLabel"))))
-	container.add(GetDirectoryItem(L("TomorrowLabel"), Callback(scheduleCallback, date = tomorrow, title = L("TomorrowLabel"))))
+	#yesterday is temporary
+	container.add(DirectoryObject(title = "Yesterday", thumb = R(DEFAULT_TEAM_ICON), key = Callback(scheduleCallback, date = yesterday, title = "Yesterday")))
+	container.add(DirectoryObject(title = L("TodayLabel"), thumb = R(DEFAULT_TEAM_ICON), key = Callback(scheduleCallback, date = today, title = L("TodayLabel"))))
+	container.add(DirectoryObject(title = L("TomorrowLabel"), thumb = R(DEFAULT_TEAM_ICON), key = Callback(scheduleCallback, date = tomorrow, title = L("TomorrowLabel"))))
 	
 	dateFormat = str(L("ScheduleDateFormat")) # strftime can't take a localstring for some reason.	
 	for x in range(1, MAIN_MENU_EXTRA_DAYS + 1):
@@ -133,18 +133,11 @@ def BuildMainMenu(container, scheduleCallback, archiveCallback):
 		dateString = datetime.datetime.strftime(date, DATE_FORMAT)
 		Log.Debug("Main menu date string: " + dateString)
 		title = datetime.datetime.strftime(date, dateFormat)
-		container.add(GetDirectoryItem(title, Callback(scheduleCallback, date = dateString, title = title)))
+		container.add(DirectoryObject(title = title, thumb = R(DEFAULT_TEAM_ICON), key = Callback(scheduleCallback, date = dateString, title = title)))
 		
 	#archive
-	container.add(GetDirectoryItem(L("ArchiveLabel"), Callback(archiveCallback)))
+	container.add(DirectoryObject(title=L("ArchiveLabel"), key = Callback(archiveCallback)))
 	
-	
-def GetDirectoryItem(title, callbackKey):
-	return DirectoryObject(
-		key = callbackKey,
-		title = title,
-		thumb = R(DEFAULT_TEAM_ICON)
-	)
 	
 def BuildScheduleMenu(container, date, gameCallback, mainMenuCallback):
 	# get games
@@ -169,10 +162,8 @@ def BuildScheduleMenu(container, date, gameCallback, mainMenuCallback):
 
 		
 def BuildGameMenu(container, gameId, highlightsCallback, selectQualityCallback):
-		
-	url = GAME_URL.replace("{gameid}", gameId)
-	Log.Debug("Loading game from url: " + url)
-	game = JSON.ObjectFromURL(url)
+	
+	game, url = GetGameAndUrl(gameId)
 	
 	utcStart = parser.parse(game["utcStart"])
 	liveStreamsAvailable = GetMinutesToStart(utcStart) <= STREAM_AVAILABLE_MINUTES_BEFORE
@@ -180,7 +171,7 @@ def BuildGameMenu(container, gameId, highlightsCallback, selectQualityCallback):
 	#replays are always available (assuming the menu item appears), but for clarity, I'll use a variable here too
 	replaysAvailable = True
 	
-	hostname = socket.gethostname()
+	hostname = str(socket.gethostname())
 	
 	if hostname in ["puddsPC", "Poseidon"]:
 		liveStreamsAvailable = True
@@ -199,25 +190,56 @@ def BuildGameMenu(container, gameId, highlightsCallback, selectQualityCallback):
 		container.add(GetStreamDirectory(selectQualityCallback, url, "replayShortAway", game["a"]["ab"], L("AwayReplayCondensedFormat"), replaysAvailable))
 	if game["a"]["replayFull"] != "":
 		container.add(GetStreamDirectory(selectQualityCallback, url, "replayFullAway", game["a"]["ab"], L("AwayReplayFullFormat"), replaysAvailable))
+		
+	if len(game["pbp"]) > 0:
+		container.add(DirectoryObject(title = L("Away Highlights"), thumb = R(GetTeamConfig(game["a"]["ab"])["Logo"]), 
+			key = Callback(highlightsCallback, gameId=gameId, forHomeTeam=False, title = L("Away Highlights"))))
 	
 	if game["h"]["replayShort"] != "":
 		container.add(GetStreamDirectory(selectQualityCallback, url, "replayShortHome", game["h"]["ab"], L("HomeReplayCondensedFormat"), replaysAvailable))
 	if game["h"]["replayFull"] != "":
 		container.add(GetStreamDirectory(selectQualityCallback, url, "replayFullHome", game["h"]["ab"], L("HomeReplayFullFormat"), replaysAvailable))
 		
+	#same if twice, so we can keep home and way elements together
 	if len(game["pbp"]) > 0:
-		container.add(GetDirectoryItem(L("HighlightsLabel"), Callback(highlightsCallback, gameId = gameId, title = L("HighlightsLabel"))))
+		container.add(DirectoryObject(title = L("Home Highlights"), thumb = R(GetTeamConfig(game["h"]["ab"])["Logo"]), 
+			key = Callback(highlightsCallback, gameId=gameId, forHomeTeam=True, title = L("Home Highlights"))))
 	
 
+def BuildHighlightsMenu(container, gameId, forHomeTeam, title, selectQualityCallback):
 
-def BuildQualitySelectionMenu(container, url, logo):
+	game, url = GetGameAndUrl(gameId)
+	
+	url = url + "?type=highlight&home=" + str(forHomeTeam)
+	
+	for item in game["pbp"]: 
+		highlightTitle = item["summary"]
+		highlightUrl = url + "&key=" + item["key"] + "&summary=" + highlightTitle + "&logo=" + DEFAULT_TEAM_ICON + "&q=" #append in next menu
+		Log.Debug("Highlight json-url: " + highlightUrl)
+		container.add(DirectoryObject(
+			key = Callback(selectQualityCallback, url = highlightUrl, title = title, logo = DEFAULT_TEAM_ICON, available = True, isHighlight=True),
+			title = highlightTitle,
+			thumb = R(DEFAULT_TEAM_ICON)
+		))
+	
+	#q = 1600, 800
+
+def BuildQualitySelectionMenu(container, url, logo, isHighlight):
+	
+	#highlights only have 800 and 1600 available
+	if not isHighlight:
+		container.add(VideoClipObject(url = url + "4500", title = "4500", thumb = R(logo)))
+		container.add(VideoClipObject(url = url + "3000", title = "3000", thumb = R(logo)))
 		
-	container.add(VideoClipObject(url = url + "4500", title = "4500", thumb = R(logo)))
-	container.add(VideoClipObject(url = url + "3000", title = "3000", thumb = R(logo)))
 	container.add(VideoClipObject(url = url + "1600", title = "1600", thumb = R(logo)))
-	container.add(VideoClipObject(url = url + "1200", title = "1200", thumb = R(logo)))
+	
+	if not isHighlight:
+		container.add(VideoClipObject(url = url + "1200", title = "1200", thumb = R(logo)))
+	
 	container.add(VideoClipObject(url = url + "800", title = "800", thumb = R(logo)))
-	container.add(VideoClipObject(url = url + "400", title = "400", thumb = R(logo)))
+	
+	if not isHighlight:
+		container.add(VideoClipObject(url = url + "400", title = "400", thumb = R(logo)))
 
 
 def GetStreamDirectory(selectQualityCallback, gameUrl, type, teamAb, titleFormat, available):
@@ -228,14 +250,19 @@ def GetStreamDirectory(selectQualityCallback, gameUrl, type, teamAb, titleFormat
 	url = gameUrl + "?type=" + type + "&name=" + team["LiveName"] + "&logo=" + team["Logo"] + "&q=" #appended in next menu
 	title = str(titleFormat).replace("{name}", team["Name"])
 	
-	# tie to video prefix..
 	return DirectoryObject(
-		key = Callback(selectQualityCallback, url = url, title = title, logo = team["Logo"], available = available),
+		key = Callback(selectQualityCallback, url = url, title = title, logo = team["Logo"], available = available, isHighlight=False),
 		title = title,
 		thumb = R(team["Logo"])
 	)
 	
 
+def GetGameAndUrl(gameId):
+	url = GAME_URL.replace("{gameid}", gameId)
+	Log.Debug("Loading game from url: " + url)
+	game = JSON.ObjectFromURL(url)
+	
+	return game, url
 	
 def GetToday():
 	

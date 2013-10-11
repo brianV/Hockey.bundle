@@ -51,7 +51,7 @@ def ArchiveMenu():
 	dir = ObjectContainer(title2 = "Archive", art=R(core.ART))
 	# this should allow users to select older dates than the main menu shows.
 	dir.add(DirectoryObject(
-		key = Callback(ScheduleMenu, date=date), # call back to itself makes it go nowhere - in some clients anyway.
+		key = Callback(ArchiveMenu), # call back to itself makes it go nowhere - in some clients anyway.
 		title = "Archive coming soon"
 	))
 	
@@ -60,7 +60,7 @@ def ArchiveMenu():
 def GameMenu(gameId, title):
 	dir = ObjectContainer(title2 = title, art=R(core.ART), view_group = "List")
 	
-	core.BuildGameMenu(dir, gameId, HighlightsMenu, SelectQualityMenu)
+	core.BuildGameMenu(dir, gameId, HighlightsMenu, SelectQualityMenu) 
 	
 	if len(dir) == 0:		
 		dir.add(DirectoryObject(
@@ -70,17 +70,14 @@ def GameMenu(gameId, title):
 	
 	return dir
 	
-def HighlightsMenu(gameId, title):
-	dir = ObjectContainer(title2 = "TEMP", art=R(core.ART), view_group = "List")
+def HighlightsMenu(gameId, title, forHomeTeam):
+	dir = ObjectContainer(title2 = title, art=R(core.ART), view_group = "List")
 	
-	dir.add(DirectoryObject(
-		key = Callback(HighlightsMenu, gameId=gameId, title=title), # call back to itself makes it go nowhere - in some clients anyway.
-		title = "Highlights coming soon"
-	))
+	core.BuildHighlightsMenu(dir, gameId, forHomeTeam, title, SelectQualityMenu)
 	
 	return dir
 	
-def SelectQualityMenu(url, title, logo, available):
+def SelectQualityMenu(url, title, logo, available, isHighlight):
 	dir = ObjectContainer(title2 = title, art=R(core.ART))
 	
 	if available == False:
@@ -88,7 +85,7 @@ def SelectQualityMenu(url, title, logo, available):
 		message = str(L("ErrorStreamsNotReady"))
 		return ObjectContainer(header=L("MainMenuTitle"), message=message)	
 	else:
-		core.BuildQualitySelectionMenu(dir, url, logo)
+		core.BuildQualitySelectionMenu(dir, url, logo, isHighlight)
 	
 	return dir
 	
