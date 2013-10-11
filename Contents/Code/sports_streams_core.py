@@ -10,6 +10,7 @@ ART = 'art-default.png'
 ICON = 'icon-default.png'
 DEFAULT_TEAM_ICON = "Team_DEFAULT.jpg"
 
+TODAY_URL = "https://raw.github.com/pudds/JsonData/master/h/today.txt"
 SCHEDULE_URL = "https://raw.github.com/pudds/JsonData/master/h/{year}-{month}-{day}.json"
 GAME_URL = "https://raw.github.com/pudds/JsonData/master/h/g/{gameid}.json"
 
@@ -106,13 +107,14 @@ class Stream:
 
 def BuildMainMenu(container, scheduleCallback, archiveCallback):	
 	# log some details about the request	
-	Log.Info("Hostname: " + socket.gethostname())
-	Log.Info("Python Version: " + sys.version)
-	Log.Info("Platform: " + sys.platform)
-	Log.Info("Client: " + str(Client.Platform)) # cast as string in case it's a null
+	Log.Info("Hostname: " + str(socket.gethostname()))
+	Log.Info("Python Version: " + str(sys.version))
+	Log.Info("Platform: " + str(sys.platform))
+	Log.Info("Client: " + str(Client.Platform))
+	
 
 	# make sure these times, which are used to make calls to the nhl servers, are always in eastern time.
-	todayDate = GetEasternNow()
+	todayDate = GetToday()
 	tomorrowDate = todayDate + datetime.timedelta(days = 1)
 	yesterdayDate = todayDate - datetime.timedelta(days = 1)
 	
@@ -235,16 +237,16 @@ def GetStreamDirectory(selectQualityCallback, gameUrl, type, teamAb, titleFormat
 	
 
 	
-def GetEasternNow():
-	#utcNow = datetime.strptime(str(datetime.utcnow()), "%Y-%m-%d %H:%M:%S")
-	utcNow = datetime.datetime.utcnow()
-	utcNow = utcNow.replace(tzinfo = UTC)
-	Log.Debug("UTC Now: " + str(utcNow))
+def GetToday():
 	
-	easternNow = utcNow.astimezone(EASTERN)
-	Log.Debug("Eastern Now: " + str(easternNow))
+	todayString = str(HTTP.Request(TODAY_URL, follow_redirects=False, cacheTime=300).content).strip()
+	Log.Debug("Today from file: " + todayString)
+	today = datetime.datetime.strptime(todayString, DATE_FORMAT)
+	today = today.replace(tzinfo = EASTERN)
 	
-	return easternNow
+	Log.Debug("Today: " + str(today))
+	
+	return today
 	
 def GetGameSummariesForDay(date):
 	

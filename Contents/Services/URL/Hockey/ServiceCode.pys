@@ -1,8 +1,7 @@
 import string
 
 LIVE_STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds/nhl/{streamName}/as/live/{streamName}_hd_{q}.m3u8"
-#http://nlds150.cdnak.neulion.com/nlds_vod/nhl/vod/2013/10/06/33/2_33_ana_wpg_1314_a_whole_1_4500_ipad.mp4.m3u8
-REPLAY_STREAM_FORMAT = "http://nlds150.cdnak.neulion.com/nlds_vod/nhl/vod/{year}/{month}/{day}/{gameNumber}/{type}_{gameNumber}_{away}_{home}_1314_{awayHome}_{fullShort}_{q}_ipad.mp4.m3u8"
+REPLAY_STREAM_FORMAT = "http://nlds{server}.cdnak.neulion.com/nlds_vod/nhl/vod/{year}/{month}/{day}/{gameNumber}/{type}_{gameNumber}_{away}_{home}_1314_{awayHome}_{fullShort}_{replayNumber}_{q}_ipad.mp4.m3u8"
 QUALITY_MARKER = "{q}" 
 
 ####################################################################################################
@@ -44,6 +43,8 @@ def MediaObjectsForURL(url):
 	data = ParseQueryString(url)
 	
 	type = data["type"]
+	
+	Log.Debug("Media object type: " + type)
 	
 	if type == "replayFullHome" or type == "replayFullAway" or type == "replayShortHome" or type == "replayShortAway":
 		return BuildReplayObject(game, data)
@@ -137,23 +138,35 @@ def BuildReplayObject(game, data):
 	
 	if type == "replayFullHome":
 		awayHome = "h"
-		fullShort = "whole_1"
+		fullShort = "whole"
+		server = game["h"]["replayFull"]
+		replayNumber = game["h"]["replayFullNumber"]
+		
 	elif type == "replayFullAway":
 		awayHome = "a"
-		fullShort = "whole_1"
+		fullShort = "whole"
+		server = game["a"]["replayFull"]
+		replayNumber = game["a"]["replayFullNumber"]
+		
 	elif type == "replayShortHome":
 		awayHome = "h"
-		fullShort = "condensed_2"
+		fullShort = "condensed"
+		server = game["h"]["replayShort"]
+		replayNumber = game["h"]["replayShortNumber"]
+		
 	elif type == "replayShortAway":
 		awayHome = "a"
-		fullShort = "condensed_2"
+		fullShort = "condensed"
+		server = game["a"]["replayShort"]
+		replayNumber = game["a"]["replayShortNumber"]
 		
 	videoUrl = REPLAY_STREAM_FORMAT.replace("{year}", year).replace("{month}", month).replace("{day}", day)
 	videoUrl = videoUrl.replace("{type}", gameType).replace("{gameNumber}", gameNumber).replace("{away}", game["a"]["ab"]).replace("{home}", game["h"]["ab"])
 	videoUrl = videoUrl.replace("{awayHome}", awayHome).replace("{fullShort}", fullShort).replace("{q}", quality)
+	videoUrl = videoUrl.replace("{server}", server).replace("{replayNumber}", str(replayNumber))
 	
 	Log.Debug("Replay Url: " + videoUrl) 
-	
+		
 	return [
 		 MediaObject(
 			parts = [PartObject(key = Callback(PlayHLS, url = videoUrl))]
