@@ -104,7 +104,7 @@ def BuildMainMenu(container, streamCallBack):
 	if len(container) == 0:
 		raise NoGamesException
 
-	Log.Debug("Request from platform: " + Client.Platform)
+	Log.Debug("Request from platform: %s" % (Client.Platform if Client.Platform is not None else "Unknown"))
 	if NeedsPreferencesItem():
 		Log.Debug("Adding preferences menu item")
 		container.add(PrefsObject(title="Preferences", summary="Change the stream bitrate.", thumb=R("icon-prefs.png")))
@@ -130,7 +130,7 @@ def BuildStreamMenu(container, gameId):
 		))
 	
 def GetStreamFormatString(key):
-	CLIENT_OS =  Client.Platform
+	CLIENT_OS = (Client.Platform if Client.Platform is not None else "Unknown")
 	
 	format = L(key + CLIENT_OS)
 	if str(format) == key + CLIENT_OS:
