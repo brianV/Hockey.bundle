@@ -61,6 +61,7 @@ def Start():
 	Plugin.AddViewGroup("LIST", viewMode = "List", mediaType = "items")
 	
 	ObjectContainer.title1 = NAME
+	ObjectContainer.user_agent("AppleCoreMedia/1.0.0.8C148 (iPad; U; CPU OS 4_2_1 like Mac OS X; en_us")
 	
 	core.Init(NAME, SPORT_KEYWORD, STREAM_FORMAT, TEAMS, DEFAULT_TEAM_ICON)
 	
